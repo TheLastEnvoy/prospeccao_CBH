@@ -110,7 +110,7 @@ def extrair_todas_oscs():
     
     # Carrega os IDs das OSCs com delimitador correto
     try:
-        df = pd.read_csv('data/ocs_PR.CSV', encoding='latin1', sep=';', on_bad_lines='skip')
+        df = pd.read_csv('data/osc_PR.CSV', encoding='latin1', sep=';', on_bad_lines='skip')
         
         # Verifica as colunas disponíveis
         print(f"📋 Colunas encontradas: {list(df.columns)}")
@@ -163,7 +163,7 @@ def extrair_todas_oscs():
 
     print(f"⏱️  Iniciando processamento com ThreadPoolExecutor...")
 
-    with ThreadPoolExecutor(max_workers=15) as executor:
+    with ThreadPoolExecutor(max_workers=10) as executor:
         futures = {executor.submit(extrair_dados, id_osc): id_osc for id_osc in ids_restantes}
         for i, future in enumerate(as_completed(futures)):
             resultado = future.result()

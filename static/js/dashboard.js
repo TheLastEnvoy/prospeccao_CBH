@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let totalPages = 0;
     let totalRecords = 0;
     let currentFilters = {};
+    let keywords = []; // Array para armazenar múltiplas palavras-chave
+    let selectedMunicipios = []; // Array para armazenar múltiplos municípios
+    let allMunicipios = []; // Lista de todos os municípios disponíveis
 
     // Utilitários
     function showToast(type, message) {
@@ -65,14 +68,203 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('palavras_chave').value = '';
         document.getElementById('naturezas_ver').selectedIndex = -1;
 
+        // Limpar palavras-chave múltiplas
+        keywords = [];
+        updateKeywordsList();
+
+        // Limpar municípios múltiplos
+        selectedMunicipios = [];
+        updateMunicipiosList();
+
         // Reset current filters
         currentFilters = {};
     }
-    function showLoading() {
+
+    // Funções para gerenciar múltiplas palavras-chave
+    function addKeyword() {
+        const input = document.getElementById('palavras_chave');
+        const keyword = input.value.trim();
+
+        if (keyword && !keywords.includes(keyword)) {
+            keywords.push(keyword);
+            input.value = '';
+            updateKeywordsList();
+            // Não executa busca automática - só quando clicar em "Filtrar Dados"
+        }
+    }
+
+    function removeKeyword(keyword) {
+        keywords = keywords.filter(k => k !== keyword);
+        updateKeywordsList();
+        // Não executa busca automática - só quando clicar em "Filtrar Dados"
+    }
+
+    function updateKeywordsList() {
+        const container = document.getElementById('keywords-list');
+        if (!container) return;
+
+        container.innerHTML = keywords.map(keyword =>
+            `<span class="keyword-tag">
+                ${keyword}
+                <button type="button" class="remove-keyword" onclick="removeKeyword('${keyword}')" title="Remover">
+                    <i class="fas fa-times"></i>
+                </button>
+            </span>`
+        ).join('');
+    }
+
+    function getKeywordsString() {
+        return keywords.join(' ');
+    }
+
+    // Funções para gerenciar múltiplos municípios
+    function addMunicipio() {
+        const input = document.getElementById('municipio');
+        const municipio = input.value.trim();
+
+        if (municipio && !selectedMunicipios.includes(municipio)) {
+            // Verifica se o município existe na lista
+            const municipioExists = allMunicipios.some(m =>
+                m.toLowerCase() === municipio.toLowerCase()
+            );
+
+            if (municipioExists) {
+                selectedMunicipios.push(municipio);
+                input.value = '';
+                updateMunicipiosList();
+                hideMunicipioSuggestions();
+            } else {
+                showToast('warning', 'Município não encontrado. Selecione da lista de sugestões.');
+            }
+        }
+    }
+
+    function removeMunicipio(municipio) {
+        selectedMunicipios = selectedMunicipios.filter(m => m !== municipio);
+        updateMunicipiosList();
+    }
+
+    function updateMunicipiosList() {
+        const container = document.getElementById('municipios-list');
+        if (!container) return;
+
+        container.innerHTML = selectedMunicipios.map(municipio =>
+            `<span class="municipio-tag">
+                ${municipio}
+                <button type="button" class="remove-municipio" onclick="removeMunicipio('${municipio}')" title="Remover">
+                    <i class="fas fa-times"></i>
+                </button>
+            </span>`
+        ).join('');
+    }
+
+    function getMunicipiosString() {
+        return selectedMunicipios.join(',');
+    }
+
+    function filterMunicipios(query) {
+        if (!query || query.length < 2) return [];
+
+        return allMunicipios.filter(municipio => {
+            const nome = municipio.toLowerCase();
+            const normalizado = municipio.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+            const queryLower = query.toLowerCase();
+            const queryNormalizado = query.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+            return nome.includes(queryLower) ||
+                   normalizado.includes(queryNormalizado) ||
+                   nome.startsWith(queryLower) ||
+                   normalizado.startsWith(queryNormalizado);
+        }).slice(0, 10); // Limita a 10 resultados
+    }
+
+    function showMunicipioSuggestions(municipios) {
+        const suggestions = document.getElementById('municipio-suggestions');
+
+        if (municipios.length === 0) {
+            suggestions.innerHTML = '<div class="municipio-suggestion-item">Nenhum município encontrado</div>';
+        } else {
+            suggestions.innerHTML = municipios.map(municipio =>
+                `<div class="municipio-suggestion-item" data-municipio="${municipio}">
+                    ${municipio}
+                </div>`
+            ).join('');
+
+            // Adiciona event listeners para os itens
+            suggestions.querySelectorAll('.municipio-suggestion-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const municipioNome = this.getAttribute('data-municipio');
+                    if (municipioNome && municipioNome !== 'Nenhum município encontrado') {
+                        document.getElementById('municipio').value = municipioNome;
+                        addMunicipio();
+                    }
+                });
+            });
+        }
+
+        suggestions.style.display = 'block';
+    }
+
+    function hideMunicipioSuggestions() {
+        const suggestions = document.getElementById('municipio-suggestions');
+        if (suggestions) {
+            suggestions.style.display = 'none';
+        }
+    }
+
+    function initializeMunicipioSearch() {
+        const municipioInput = document.getElementById('municipio');
+        const suggestions = document.getElementById('municipio-suggestions');
+
+        if (!municipioInput || !suggestions) return;
+
+        // Event listener para input de busca
+        municipioInput.addEventListener('input', function(e) {
+            const query = e.target.value.trim();
+
+            if (query.length === 0) {
+                hideMunicipioSuggestions();
+                return;
+            }
+
+            if (query.length < 2) {
+                return; // Só busca com 2+ caracteres
+            }
+
+            const filteredMunicipios = filterMunicipios(query);
+            showMunicipioSuggestions(filteredMunicipios);
+        });
+
+        // Esconder sugestões quando clicar fora
+        document.addEventListener('click', function(e) {
+            if (!municipioInput.contains(e.target) && !suggestions.contains(e.target)) {
+                hideMunicipioSuggestions();
+            }
+        });
+
+        // Enter para adicionar município
+        municipioInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addMunicipio();
+            }
+        });
+
+        // ESC para limpar
+        municipioInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                municipioInput.value = '';
+                hideMunicipioSuggestions();
+            }
+        });
+    }
+    function showLoading(shouldScroll = true) {
         const loadingSection = document.getElementById('loading-section');
         if (loadingSection) {
             loadingSection.style.display = 'block';
-            loadingSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (shouldScroll) {
+                loadingSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         }
     }
 
@@ -133,16 +325,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     function getFilters() {
         return {
-            municipio: document.getElementById('municipio').value,
+            municipio: getMunicipiosString(),
             natureza_juridica: document.getElementById('natureza_juridica').value,
-            palavras_chave: document.getElementById('palavras_chave').value,
+            palavras_chave: getKeywordsString(),
             naturezas_ver: Array.from(document.getElementById('naturezas_ver').selectedOptions).map(option => option.value)
         };
     }
 
-    function loadData(page = 1) {
+    function loadData(page = 1, shouldScroll = true) {
         console.log('Iniciando loadData, página:', page);
-        showLoading();
+        showLoading(shouldScroll);
 
         currentFilters = getFilters();
         const data = {
@@ -368,25 +560,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('btn-toggle-mapa').addEventListener('click', toggleMapSection);
 
-    // Enter key support for search
-    document.getElementById('palavras_chave').addEventListener('keypress', function(e) {
+    // Event listeners para palavras-chave múltiplas
+    const palavrasChaveInput = document.getElementById('palavras_chave');
+
+    // Prevenir qualquer busca automática
+    palavrasChaveInput.addEventListener('input', function(e) {
+        // Não faz nada - apenas previne outros event listeners
+        e.stopPropagation();
+    });
+
+    palavrasChaveInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
-            loadData(1);
+            addKeyword();
         }
     });
 
-    // Debounced search for better performance
-    let searchTimeout;
-    document.getElementById('palavras_chave').addEventListener('input', function(e) {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            if (e.target.value.length >= 3 || e.target.value.length === 0) {
-                // Auto-search when 3+ characters or empty
-                loadData(1);
-            }
-        }, 500);
+    // Prevenir eventos de change que possam disparar busca
+    palavrasChaveInput.addEventListener('change', function(e) {
+        e.stopPropagation();
     });
+
+    document.getElementById('btn-add-keyword').addEventListener('click', function() {
+        addKeyword();
+    });
+
+    // Event listeners para municípios múltiplos
+    document.getElementById('btn-add-municipio').addEventListener('click', function() {
+        addMunicipio();
+    });
+
+    // Inicializar busca de municípios
+    initializeMunicipioSearch();
+
+    // Remover auto-search - agora só busca quando clicar em "Filtrar Dados"
 
     // Keyboard navigation for accessibility
     document.addEventListener('keydown', function(e) {
@@ -402,6 +609,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (document.activeElement === searchInput) {
                 searchInput.value = '';
                 searchInput.blur();
+                // Limpar todas as palavras-chave se não houver nenhuma no input
+                if (keywords.length > 0) {
+                    keywords = [];
+                    updateKeywordsList();
+                    // Não executa busca automática - só quando clicar em "Filtrar Dados"
+                }
             }
         }
     });
@@ -440,4 +653,23 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeMapToggleButton();
 
     console.log('Dashboard inicializado com sucesso!');
+
+    // Carregar lista de municípios do template
+    const municipiosScript = document.querySelector('script[data-municipios]');
+    if (municipiosScript) {
+        try {
+            allMunicipios = JSON.parse(municipiosScript.textContent);
+            console.log('Municípios carregados:', allMunicipios.length);
+        } catch (e) {
+            console.error('Erro ao carregar lista de municípios:', e);
+            allMunicipios = [];
+        }
+    } else {
+        console.warn('Lista de municípios não encontrada no template');
+        allMunicipios = [];
+    }
+
+    // Tornar funções globais para uso em onclick
+    window.removeKeyword = removeKeyword;
+    window.removeMunicipio = removeMunicipio;
 });

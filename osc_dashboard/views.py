@@ -89,13 +89,13 @@ def get_filter_options():
 def dashboard(request):
     """View principal do dashboard"""
     filter_options = get_filter_options()
-    
+
     context = {
-        'municipios': filter_options['municipios'],
+        'municipios': json.dumps(filter_options['municipios']),  # Converte para JSON
         'naturezas_juridicas': filter_options['naturezas_juridicas'],
         'total_registros': filter_options['total_registros']
     }
-    
+
     return render(request, 'osc_dashboard/dashboard.html', context)
 
 @csrf_exempt
@@ -119,16 +119,28 @@ def export_data(request):
             params = []
             
             if municipio:
-                query += " AND edmu_nm_municipio LIKE ?"
-                params.append(f'%{municipio}%')
+                # Separa os municípios e faz busca OR
+                municipios = [m.strip() for m in municipio.split(',') if m.strip()]
+                if municipios:
+                    municipio_conditions = []
+                    for mun in municipios:
+                        municipio_conditions.append("edmu_nm_municipio LIKE ?")
+                        params.append(f'%{mun}%')
+                    query += f" AND ({' OR '.join(municipio_conditions)})"
             
             if natureza_juridica:
                 query += " AND natureza_juridica LIKE ?"
                 params.append(f'%{natureza_juridica}%')
             
             if palavras_chave:
-                query += " AND nome LIKE ?"
-                params.append(f'%{palavras_chave}%')
+                # Separa as palavras-chave e faz busca OR
+                keywords = [kw.strip() for kw in palavras_chave.split() if kw.strip()]
+                if keywords:
+                    keyword_conditions = []
+                    for keyword in keywords:
+                        keyword_conditions.append("nome LIKE ?")
+                        params.append(f'%{keyword}%')
+                    query += f" AND ({' OR '.join(keyword_conditions)})"
             
             # Filtra apenas as naturezas jurídicas selecionadas
             if naturezas_ver:
@@ -208,16 +220,28 @@ def filter_data(request):
             params = []
             
             if municipio:
-                count_query += " AND edmu_nm_municipio LIKE ?"
-                params.append(f'%{municipio}%')
+                # Separa os municípios e faz busca OR
+                municipios = [m.strip() for m in municipio.split(',') if m.strip()]
+                if municipios:
+                    municipio_conditions = []
+                    for mun in municipios:
+                        municipio_conditions.append("edmu_nm_municipio LIKE ?")
+                        params.append(f'%{mun}%')
+                    count_query += f" AND ({' OR '.join(municipio_conditions)})"
             
             if natureza_juridica:
                 count_query += " AND natureza_juridica LIKE ?"
                 params.append(f'%{natureza_juridica}%')
             
             if palavras_chave:
-                count_query += " AND nome LIKE ?"
-                params.append(f'%{palavras_chave}%')
+                # Separa as palavras-chave e faz busca OR
+                keywords = [kw.strip() for kw in palavras_chave.split() if kw.strip()]
+                if keywords:
+                    keyword_conditions = []
+                    for keyword in keywords:
+                        keyword_conditions.append("nome LIKE ?")
+                        params.append(f'%{keyword}%')
+                    count_query += f" AND ({' OR '.join(keyword_conditions)})"
             
             # Filtra apenas as naturezas jurídicas selecionadas
             if naturezas_ver:

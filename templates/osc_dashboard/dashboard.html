@@ -89,12 +89,17 @@
                             <label for="municipio" class="form-label fw-semibold">
                                 <i class="fas fa-map-marker-alt me-1"></i>Município
                             </label>
-                            <select class="form-select" id="municipio">
-                                <option value="">Todos os municípios</option>
-                                {% for municipio in municipios %}
-                                <option value="{{ municipio }}">{{ municipio }}</option>
-                                {% endfor %}
-                            </select>
+                            <div class="municipios-container">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="municipio"
+                                           placeholder="Digite nome do município...">
+                                    <button class="btn btn-outline-success" type="button" id="btn-add-municipio" title="Adicionar município">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                <div id="municipios-list" class="municipios-list mt-2"></div>
+                                <div id="municipio-suggestions" class="municipio-suggestions"></div>
+                            </div>
                         </div>
                         <div class="col-lg-3 col-md-6">
                             <label for="natureza_juridica" class="form-label fw-semibold">
@@ -111,8 +116,16 @@
                             <label for="palavras_chave" class="form-label fw-semibold">
                                 <i class="fas fa-search me-1"></i>Palavras-chave
                             </label>
-                            <input type="text" class="form-control" id="palavras_chave"
-                                   placeholder="Digite palavras-chave...">
+                            <div class="keywords-container">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="palavras_chave"
+                                           placeholder="Digite palavras-chave...">
+                                    <button class="btn btn-outline-primary" type="button" id="btn-add-keyword" title="Adicionar palavra-chave">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                <div id="keywords-list" class="keywords-list mt-2"></div>
+                            </div>
                         </div>
                         <div class="col-lg-3 col-md-6">
                             <label for="naturezas_ver" class="form-label fw-semibold">
@@ -388,6 +401,9 @@
     var filterDataUrl = "{% url 'osc_dashboard:filter_data' %}";
     var exportDataUrl = "{% url 'osc_dashboard:export_data' %}";
 </script>
+
+<!-- Lista de municípios para JavaScript -->
+<script type="application/json" data-municipios>{{ municipios|safe }}</script>
 
 <script src="{% static 'js/mapa_temp.js' %}"></script>
 <script src="{% static 'js/dashboard.js' %}"></script>
