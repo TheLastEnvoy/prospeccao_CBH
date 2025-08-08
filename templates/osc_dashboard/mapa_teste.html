@@ -1,0 +1,29 @@
+{% extends 'osc_dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Mapa do Paraná</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Container do Mapa -->
+                    <div id="map" style="height: 500px; width: 100%; border: 2px solid #ccc; border-radius: 8px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
+    crossorigin=""></script>
+<!-- Mapa JS -->
+<script src="{% static 'js/mapa_novo.js' %}"></script>
+{% endblock %}

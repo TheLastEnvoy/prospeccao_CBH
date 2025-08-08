@@ -1,0 +1,242 @@
+// Aguarda o DOM estar completamente carregado
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Iniciando mapa...');
+    
+    // Inicialização do mapa
+    var map = L.map('map', {
+        center: [-24.7, -51.9],
+        zoom: 7,
+        zoomControl: true,
+        attributionControl: true
+    });
+
+    // Adiciona o tile layer do OpenStreetMap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Função para obter cor baseada na quantidade de OSCs
+    function getColor(total) {
+        return total > 1000 ? '#800026' :
+               total > 500  ? '#BD0026' :
+               total > 200  ? '#E31A1C' :
+               total > 100  ? '#FC4E2A' :
+               total > 50   ? '#FD8D3C' :
+               total > 20   ? '#FEB24C' :
+               total > 10   ? '#FED976' :
+                            '#FFEDA0';
+    }
+
+    // Função para definir o estilo de cada município
+    function style(feature, oscData) {
+        const municipio = feature.properties.NM_MUN;
+        const dados = oscData[municipio] || 0;
+        
+        return {
+            fillColor: getColor(dados),
+            weight: 1,
+            opacity: 1,
+            color: 'white',
+            dashArray: '3',
+            fillOpacity: 0.7
+        };
+    }
+
+    // Função para criar o popup com informações
+    function createPopup(feature, oscData) {
+        const municipio = feature.properties.NM_MUN;
+        const total = oscData[municipio] || 0;
+        return `
+            <div class="popup-content">
+                <h5>${municipio}</h5>
+                <p><strong>Total de OSCs:</strong> ${total}</p>
+            </div>
+        `;
+    }
+
+    // Função para destacar um município quando o mouse passa por cima
+    function highlightFeature(e) {
+        var layer = e.target;
+
+        layer.setStyle({
+            weight: 3,
+            color: '#666',
+            dashArray: '',
+            fillOpacity: 0.9
+        });
+
+        layer.bringToFront();
+    }
+
+    // Função para resetar o destaque
+    function resetHighlight(e, geojson, oscData) {
+        geojson.resetStyle(e.target);
+    }
+
+    // Função para aplicar interatividade a cada município
+    function onEachFeature(feature, layer, oscData, geojson) {
+        layer.on({
+            mouseover: highlightFeature,
+            mouseout: (e) => resetHighlight(e, geojson, oscData),
+            click: (e) => {
+                map.fitBounds(e.target.getBounds());
+            }
+        });
+        
+        layer.bindPopup(createPopup(feature, oscData));
+    }
+
+    // Função para criar a legenda
+    function createLegend() {
+        var legend = L.control({position: 'bottomright'});
+
+        legend.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'info legend'),
+                grades = [0, 10, 20, 50, 100, 200, 500, 1000];
+
+            div.innerHTML = '<h4>OSCs por Município</h4>';
+
+            for (var i = 0; i < grades.length; i++) {
+                div.innerHTML += `
+                    <div class="category">
+                        <i style="background:${getColor(grades[i] + 1)}"></i>
+                        ${grades[i]}${grades[i + 1] ? '&ndash;' + grades[i + 1] : '+'} OSCs
+                    </div>
+                `;
+            }
+
+            return div;
+        };
+
+        return legend;
+    }
+
+    // Função para criar o controle de busca
+    function createSearchControl(geojsonLayer, municipios) {
+        var searchControl = L.control({position: 'topleft'});
+
+        searchControl.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'leaflet-control-search');
+            var input = L.DomUtil.create('input', '', div);
+            var results = L.DomUtil.create('div', 'search-results', div);
+            
+            input.type = 'text';
+            input.placeholder = 'Buscar município...';
+
+            // Prevenir que o mapa se mova quando usar o scroll na lista de resultados
+            L.DomEvent.disableScrollPropagation(div);
+            L.DomEvent.disableClickPropagation(div);
+
+            input.addEventListener('input', function(e) {
+                var value = e.target.value.toLowerCase();
+                results.innerHTML = '';
+
+                if (value.length < 2) {
+                    results.style.display = 'none';
+                    return;
+                }
+
+                var matches = municipios.filter(function(municipio) {
+                    return municipio.toLowerCase().includes(value);
+                }).slice(0, 10); // Limitar a 10 resultados
+
+                if (matches.length > 0) {
+                    results.style.display = 'block';
+                    matches.forEach(function(municipio) {
+                        var item = L.DomUtil.create('div', 'search-result-item', results);
+                        item.textContent = municipio;
+                        item.addEventListener('click', function() {
+                            geojsonLayer.eachLayer(function(layer) {
+                                if (layer.feature.properties.NM_MUN === municipio) {
+                                    map.fitBounds(layer.getBounds());
+                                    layer.openPopup();
+                                    input.value = '';
+                                    results.style.display = 'none';
+                                }
+                            });
+                        });
+                    });
+                } else {
+                    results.style.display = 'none';
+                }
+            });
+
+            return div;
+        };
+
+        return searchControl;
+    }
+
+    // Carregar dados das OSCs e do GeoJSON
+    Promise.all([
+        fetch('/municipios-data/').then(response => response.json()),
+        fetch('/static/geojson/PR_Municipios_2023_optimized.geojson').then(response => response.json())
+    ]).then(([oscResponse, geojsonData]) => {
+        console.log('Dados carregados com sucesso');
+
+        // Converter array de objetos para objeto indexado por município
+        const oscData = {};
+        oscResponse.data.forEach(item => {
+            oscData[item.municipio] = item.total_oscs;
+        });
+
+        // Criar camada GeoJSON com os dados
+        const geojsonLayer = L.geoJSON(geojsonData, {
+            style: (feature) => style(feature, oscData),
+            onEachFeature: (feature, layer) => {
+                layer.bindPopup(createPopup(feature, oscData));
+                
+                layer.on({
+                    mouseover: (e) => highlightFeature(e, oscData),
+                    mouseout: (e) => resetHighlight(e, oscData),
+                    click: (e) => {
+                        map.fitBounds(e.target.getBounds());
+                    }
+                });
+            }
+        }).addTo(map);
+
+        // Extrair lista de municípios do GeoJSON
+        const municipios = geojsonData.features
+            .map(feature => feature.properties.NM_MUN)
+            .sort();
+
+        // Adicionar controle de busca
+        createSearchControl(geojsonLayer, municipios).addTo(map);
+
+        // Adicionar legenda
+        createLegend().addTo(map);
+
+        // Ajustar visualização para incluir todo o estado
+        try {
+            const bounds = L.geoJSON(geojsonData).getBounds();
+            map.fitBounds(bounds);
+        } catch (error) {
+            console.error('Erro ao ajustar visualização:', error);
+        }
+        
+    }).catch(error => {
+        console.error('Erro ao carregar os dados:', error);
+        document.getElementById('map').innerHTML = `
+            <div class="alert alert-danger">
+                Erro ao carregar o mapa: ${error.message}
+            </div>
+        `;
+    });
+
+    // Função para atualizar o tamanho do mapa
+    function updateMapSize() {
+        if (map) {
+            console.log('Atualizando tamanho do mapa...');
+            map.invalidateSize();
+        }
+    }
+
+    // Eventos para garantir que o mapa seja renderizado corretamente
+    window.addEventListener('resize', updateMapSize);
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            setTimeout(updateMapSize, 200);
+        }
+    });
+});

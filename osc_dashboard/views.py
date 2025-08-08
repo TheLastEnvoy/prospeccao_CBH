@@ -1,4 +1,4 @@
-import pandas as pd
+import sqlite3
 import os
 from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
@@ -6,41 +6,85 @@ from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 import json
 from datetime import datetime
+import pandas as pd
+
+def get_db_connection():
+    """Retorna conexão com o banco SQLite"""
+    db_path = os.path.join(settings.BASE_DIR, 'data', 'oscs_parana_novo.db')
+    return sqlite3.connect(db_path)
 
 def load_osc_data():
-    """Carrega os dados do CSV das OSCs"""
-    csv_path = os.path.join(settings.BASE_DIR, 'data', 'dados_osc_PR_completo.csv')
-    
-    if not os.path.exists(csv_path):
-        return pd.DataFrame()
-    
+    """Carrega os dados do banco SQLite das OSCs"""
     try:
-        df = pd.read_csv(csv_path, encoding='utf-8')
+        conn = get_db_connection()
+        df = pd.read_sql_query("SELECT * FROM oscs", conn)
+        conn.close()
         return df
     except Exception as e:
-        print(f"Erro ao carregar dados: {e}")
+        print(f"Erro ao carregar dados do banco: {e}")
         return pd.DataFrame()
 
+def get_oscs_por_municipio():
+    """Retorna a contagem de OSCs por município"""
+    try:
+        conn = get_db_connection()
+        query = """
+            SELECT 
+                edmu_nm_municipio as municipio,
+                COUNT(*) as total_oscs
+            FROM oscs 
+            WHERE edmu_nm_municipio != ''
+            GROUP BY edmu_nm_municipio
+            ORDER BY edmu_nm_municipio
+        """
+        df = pd.read_sql_query(query, conn)
+        conn.close()
+        return df.to_dict('records')
+    except Exception as e:
+        print(f"Erro ao obter contagem de OSCs por município: {e}")
+        return []
+
+def get_municipios_data(request):
+    """API endpoint para retornar dados de OSCs por município"""
+    dados = get_oscs_por_municipio()
+    return JsonResponse({'data': dados})
+
+def mapa_teste(request):
+    """View para testar o mapa isoladamente"""
+    return render(request, 'osc_dashboard/mapa_teste.html')
+
 def get_filter_options():
-    """Obtém as opções de filtro disponíveis"""
-    df = load_osc_data()
-    
-    if df.empty:
+    """Obtém as opções de filtro disponíveis do banco"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Obtém municípios únicos
+        cursor.execute("SELECT DISTINCT edmu_nm_municipio FROM oscs WHERE edmu_nm_municipio != '' ORDER BY edmu_nm_municipio")
+        municipios = [row[0] for row in cursor.fetchall()]
+        
+        # Obtém naturezas jurídicas únicas
+        cursor.execute("SELECT DISTINCT natureza_juridica FROM oscs WHERE natureza_juridica != '' ORDER BY natureza_juridica")
+        naturezas_juridicas = [row[0] for row in cursor.fetchall()]
+        
+        # Obtém total de registros
+        cursor.execute("SELECT COUNT(*) FROM oscs")
+        total_registros = cursor.fetchone()[0]
+        
+        conn.close()
+        
+        return {
+            'municipios': municipios,
+            'naturezas_juridicas': naturezas_juridicas,
+            'total_registros': total_registros
+        }
+    except Exception as e:
+        print(f"Erro ao obter opções de filtro: {e}")
         return {
             'municipios': [],
             'naturezas_juridicas': [],
             'total_registros': 0
         }
-    
-    # Remove valores vazios e obtém valores únicos
-    municipios = sorted(df['edmu_nm_municipio'].dropna().unique().tolist())
-    naturezas_juridicas = sorted(df['natureza_juridica'].dropna().unique().tolist())
-    
-    return {
-        'municipios': municipios,
-        'naturezas_juridicas': naturezas_juridicas,
-        'total_registros': len(df)
-    }
 
 def dashboard(request):
     """View principal do dashboard"""
@@ -56,7 +100,7 @@ def dashboard(request):
 
 @csrf_exempt
 def export_data(request):
-    """Exporta dados filtrados para Excel"""
+    """Exporta dados filtrados para Excel usando SQLite"""
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -65,28 +109,39 @@ def export_data(request):
             municipio = data.get('municipio', '')
             natureza_juridica = data.get('natureza_juridica', '')
             palavras_chave = data.get('palavras_chave', '')
-            naturezas_ignorar = data.get('naturezas_ignorar', [])
+            naturezas_ver = data.get('naturezas_ver', [])  # Mudança: agora são as naturezas que quer ver
             
-            # Carrega dados
-            df = load_osc_data()
+            # Conecta ao banco
+            conn = get_db_connection()
             
-            if df.empty:
-                return JsonResponse({'error': 'Dados não encontrados'}, status=404)
+            # Constrói query SQL
+            query = "SELECT * FROM oscs WHERE 1=1"
+            params = []
             
-            # Aplica filtros
             if municipio:
-                df = df[df['edmu_nm_municipio'].str.contains(municipio, case=False, na=False)]
+                query += " AND edmu_nm_municipio LIKE ?"
+                params.append(f'%{municipio}%')
             
             if natureza_juridica:
-                df = df[df['natureza_juridica'].str.contains(natureza_juridica, case=False, na=False)]
+                query += " AND natureza_juridica LIKE ?"
+                params.append(f'%{natureza_juridica}%')
             
             if palavras_chave:
-                df = df[df['nome'].str.contains(palavras_chave, case=False, na=False)]
+                query += " AND nome LIKE ?"
+                params.append(f'%{palavras_chave}%')
             
-            # Remove naturezas jurídicas ignoradas
-            if naturezas_ignorar:
-                for natureza in naturezas_ignorar:
-                    df = df[~df['natureza_juridica'].str.contains(natureza, case=False, na=False)]
+            # Filtra apenas as naturezas jurídicas selecionadas
+            if naturezas_ver:
+                placeholders = ','.join(['?' for _ in naturezas_ver])
+                query += f" AND natureza_juridica IN ({placeholders})"
+                params.extend(naturezas_ver)
+            
+            # Executa query
+            df = pd.read_sql_query(query, conn, params=params)
+            conn.close()
+            
+            if df.empty:
+                return JsonResponse({'error': 'Nenhum dado encontrado'}, status=404)
             
             # Renomeia colunas para melhor visualização
             df_export = df.copy()
@@ -132,7 +187,7 @@ def export_data(request):
 
 @csrf_exempt
 def filter_data(request):
-    """Filtra dados e retorna resultados em JSON"""
+    """Filtra dados usando SQLite e retorna resultados em JSON"""
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -141,45 +196,51 @@ def filter_data(request):
             municipio = data.get('municipio', '')
             natureza_juridica = data.get('natureza_juridica', '')
             palavras_chave = data.get('palavras_chave', '')
-            naturezas_ignorar = data.get('naturezas_ignorar', [])
+            naturezas_ver = data.get('naturezas_ver', [])  # Mudança: agora são as naturezas que quer ver
             page = data.get('page', 1)
             per_page = data.get('per_page', 50)
             
-            # Carrega dados
-            df = load_osc_data()
+            # Conecta ao banco
+            conn = get_db_connection()
             
-            if df.empty:
-                return JsonResponse({
-                    'data': [],
-                    'total': 0,
-                    'page': page,
-                    'per_page': per_page,
-                    'total_pages': 0
-                })
+            # Constrói query SQL para contagem total
+            count_query = "SELECT COUNT(*) FROM oscs WHERE 1=1"
+            params = []
             
-            # Aplica filtros
             if municipio:
-                df = df[df['edmu_nm_municipio'].str.contains(municipio, case=False, na=False)]
+                count_query += " AND edmu_nm_municipio LIKE ?"
+                params.append(f'%{municipio}%')
             
             if natureza_juridica:
-                df = df[df['natureza_juridica'].str.contains(natureza_juridica, case=False, na=False)]
+                count_query += " AND natureza_juridica LIKE ?"
+                params.append(f'%{natureza_juridica}%')
             
             if palavras_chave:
-                df = df[df['nome'].str.contains(palavras_chave, case=False, na=False)]
+                count_query += " AND nome LIKE ?"
+                params.append(f'%{palavras_chave}%')
             
-            # Remove naturezas jurídicas ignoradas
-            if naturezas_ignorar:
-                for natureza in naturezas_ignorar:
-                    df = df[~df['natureza_juridica'].str.contains(natureza, case=False, na=False)]
+            # Filtra apenas as naturezas jurídicas selecionadas
+            if naturezas_ver:
+                placeholders = ','.join(['?' for _ in naturezas_ver])
+                count_query += f" AND natureza_juridica IN ({placeholders})"
+                params.extend(naturezas_ver)
             
-            # Paginação
-            total = len(df)
-            start_idx = (page - 1) * per_page
-            end_idx = start_idx + per_page
-            df_page = df.iloc[start_idx:end_idx]
+            # Executa contagem
+            cursor = conn.cursor()
+            cursor.execute(count_query, params)
+            total = cursor.fetchone()[0]
+            
+            # Constrói query para dados com paginação
+            data_query = count_query.replace("SELECT COUNT(*)", "SELECT *")
+            data_query += " LIMIT ? OFFSET ?"
+            data_params = params + [per_page, (page - 1) * per_page]
+            
+            # Executa query de dados
+            df = pd.read_sql_query(data_query, conn, params=data_params)
+            conn.close()
             
             # Converte para lista de dicionários
-            data_list = df_page.to_dict('records')
+            data_list = df.to_dict('records')
             
             return JsonResponse({
                 'data': data_list,

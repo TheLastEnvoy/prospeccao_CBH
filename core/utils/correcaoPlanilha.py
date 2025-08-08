@@ -257,16 +257,15 @@ def fix_spreadsheet_encoding(input_file: str, output_file: str = None,
 # Exemplo de uso
 if __name__ == "__main__":
     try:
-        # Substitua pelo caminho do seu arquivo
-        arquivo_entrada = "C:/Users/DavidosSantosVillela/Documents/IPEA/ocs_PR.xlsx"  # Mude aqui para o nome do seu arquivo
+        # Corrige o CSV 'dados_osc_PR_completo_corrigido.csv' por padrão
+        arquivo_entrada = "data/dados_osc_PR_completo_corrigido.csv"
+        arquivo_saida = "data/dados_osc_PR_completo_corrigido_utf8.csv"
 
-        # Verifica se o arquivo existe
         if not os.path.exists(arquivo_entrada):
             print(f"ERRO: Arquivo '{arquivo_entrada}' não encontrado!")
-            print("Por favor, coloque o arquivo na mesma pasta do script ou ajuste o caminho.")
+            print("Por favor, coloque o arquivo na pasta 'data' ou ajuste o caminho.")
         else:
-            # Processa o arquivo
-            arquivo_saida = fix_spreadsheet_encoding(arquivo_entrada)
+            arquivo_saida = fix_spreadsheet_encoding(arquivo_entrada, arquivo_saida, file_type='csv')
             print(f"\nSUCESSO! Arquivo corrigido salvo como: {arquivo_saida}")
 
     except Exception as e:

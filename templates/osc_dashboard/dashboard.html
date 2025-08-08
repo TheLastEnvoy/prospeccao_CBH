@@ -1,360 +1,394 @@
 {% extends 'osc_dashboard/base.html' %}
+{% load static %}
 
-{% block title %}Dashboard OSCs Paraná - Filtros e Visualização{% endblock %}
+{% block title %}Dashboard OSCs Paraná{% endblock %}
 
 {% block content %}
-<!-- Header Section -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="stats-card">
-            <div class="row text-center">
-                <div class="col-md-4">
-                    <h3><i class="fas fa-building me-2"></i>{{ total_registros|floatformat:0 }}</h3>
-                    <p class="mb-0">Total de OSCs</p>
-                </div>
-                <div class="col-md-4">
-                    <h3><i class="fas fa-map-marker-alt me-2"></i>{{ municipios|length }}</h3>
-                    <p class="mb-0">Municípios</p>
-                </div>
-                <div class="col-md-4">
-                    <h3><i class="fas fa-balance-scale me-2"></i>{{ naturezas_juridicas|length }}</h3>
-                    <p class="mb-0">Naturezas Jurídicas</p>
+<!-- CSRF Token -->
+{% csrf_token %}
+
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 bg-gradient-primary text-white">
+                <div class="card-body text-center py-4">
+                    <h1 class="display-6 fw-bold mb-2">
+                        <i class="fas fa-chart-bar me-3"></i>
+                        Dashboard de OSCs do Paraná
+                    </h1>
+                    <p class="lead mb-0">
+                        Explore e analise dados de <span id="total-oscs" class="fw-bold">{{ total_registros|default:0 }}</span> Organizações da Sociedade Civil
+                    </p>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Filters Section -->
-<div class="filter-section">
-    <h4 class="mb-4">
-        <i class="fas fa-filter me-2"></i>Filtros de Pesquisa
-    </h4>
-    
-    <form id="filterForm">
-        <div class="row">
-            <!-- Município -->
-            <div class="col-md-3 mb-3">
-                <label for="municipio" class="form-label">
-                    <i class="fas fa-map-marker-alt me-1"></i>Município
-                </label>
-                <select class="form-select" id="municipio" name="municipio">
-                    <option value="">Todos os municípios</option>
-                    {% for municipio in municipios %}
-                    <option value="{{ municipio }}">{{ municipio }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <!-- Natureza Jurídica -->
-            <div class="col-md-3 mb-3">
-                <label for="natureza_juridica" class="form-label">
-                    <i class="fas fa-balance-scale me-1"></i>Natureza Jurídica
-                </label>
-                <select class="form-select" id="natureza_juridica" name="natureza_juridica">
-                    <option value="">Todas as naturezas</option>
-                    {% for natureza in naturezas_juridicas %}
-                    <option value="{{ natureza }}">{{ natureza }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <!-- Palavras-chave -->
-            <div class="col-md-3 mb-3">
-                <label for="palavras_chave" class="form-label">
-                    <i class="fas fa-search me-1"></i>Palavras-chave
-                </label>
-                <input type="text" class="form-control" id="palavras_chave" name="palavras_chave" 
-                       placeholder="Buscar no nome da OSC">
-            </div>
-            
-            <!-- Botões -->
-            <div class="col-md-3 mb-3 d-flex align-items-end">
-                <div class="d-grid gap-2 w-100">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-search me-1"></i>Filtrar
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary" id="limparFiltros">
-                        <i class="fas fa-eraser me-1"></i>Limpar
-                    </button>
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 h-100">
+                <div class="card-body text-center">
+                    <div class="text-primary mb-2">
+                        <i class="fas fa-building fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Total de OSCs</h5>
+                    <h3 class="text-primary fw-bold" id="stats-total">{{ total_registros|default:0 }}</h3>
                 </div>
             </div>
         </div>
-        
-        <!-- Naturezas a Ignorar -->
-        <div class="row mt-3">
-            <div class="col-12">
-                <label class="form-label">
-                    <i class="fas fa-ban me-1"></i>Naturezas Jurídicas a Ignorar
-                </label>
-                <div class="row" id="naturezasIgnorar">
-                    {% for natureza in naturezas_juridicas %}
-                    <div class="col-md-3 mb-2">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" 
-                                   value="{{ natureza }}" id="ignore_{{ forloop.counter }}">
-                            <label class="form-check-label" for="ignore_{{ forloop.counter }}">
-                                {{ natureza }}
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 h-100">
+                <div class="card-body text-center">
+                    <div class="text-success mb-2">
+                        <i class="fas fa-map-marker-alt fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Municípios</h5>
+                    <h3 class="text-success fw-bold">{{ municipios|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 h-100">
+                <div class="card-body text-center">
+                    <div class="text-warning mb-2">
+                        <i class="fas fa-tags fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Naturezas Jurídicas</h5>
+                    <h3 class="text-warning fw-bold">{{ naturezas_juridicas|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 h-100">
+                <div class="card-body text-center">
+                    <div class="text-info mb-2">
+                        <i class="fas fa-filter fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Filtrados</h5>
+                    <h3 class="text-info fw-bold" id="stats-filtered">0</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0">
+                <div class="card-header bg-light border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-search me-2"></i>
+                        Filtros de Pesquisa
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-lg-3 col-md-6">
+                            <label for="municipio" class="form-label fw-semibold">
+                                <i class="fas fa-map-marker-alt me-1"></i>Município
                             </label>
+                            <select class="form-select" id="municipio">
+                                <option value="">Todos os municípios</option>
+                                {% for municipio in municipios %}
+                                <option value="{{ municipio }}">{{ municipio }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <label for="natureza_juridica" class="form-label fw-semibold">
+                                <i class="fas fa-tag me-1"></i>Natureza Jurídica
+                            </label>
+                            <select class="form-select" id="natureza_juridica">
+                                <option value="">Todas as naturezas</option>
+                                {% for natureza in naturezas_juridicas %}
+                                <option value="{{ natureza }}">{{ natureza }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <label for="palavras_chave" class="form-label fw-semibold">
+                                <i class="fas fa-search me-1"></i>Palavras-chave
+                            </label>
+                            <input type="text" class="form-control" id="palavras_chave"
+                                   placeholder="Digite palavras-chave...">
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <label for="naturezas_ver" class="form-label fw-semibold">
+                                <i class="fas fa-eye me-1"></i>Naturezas para Visualizar
+                            </label>
+                            <select class="form-select" id="naturezas_ver" multiple>
+                                {% for natureza in naturezas_juridicas %}
+                                <option value="{{ natureza }}">{{ natureza }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">
+                                Ctrl+clique para múltiplas seleções
+                            </small>
                         </div>
                     </div>
-                    {% endfor %}
+
+                    <!-- Action Buttons -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="btn btn-primary" id="btn-filtrar">
+                                    <i class="fas fa-filter me-2"></i>Filtrar Dados
+                                </button>
+                                <button type="button" class="btn btn-success" id="btn-exportar">
+                                    <i class="fas fa-download me-2"></i>Exportar Excel
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="btn-limpar">
+                                    <i class="fas fa-eraser me-2"></i>Limpar Filtros
+                                </button>
+                                <button type="button" class="btn btn-outline-info" id="btn-toggle-mapa">
+                                    <i class="fas fa-map me-2"></i>Mostrar/Ocultar Mapa
+                                </button>
+                                <button type="button" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#helpModal">
+                                    <i class="fas fa-question-circle me-2"></i>Ajuda
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </form>
+    </div>
+
+    <!-- Map Section -->
+    <div class="row mb-4" id="mapa-section">
+        <div class="col-12">
+            <div class="card border-0">
+                <div class="card-header bg-light border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-map me-2"></i>
+                        Mapa de Distribuição das OSCs
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Map Search -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="map-search-container">
+                                <input type="text" id="map-search" class="form-control"
+                                       placeholder="Buscar município no mapa...">
+                                <div id="map-search-results" class="map-search-results"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Map Container -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div id="map" class="rounded shadow-sm"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Section -->
+    <div class="row mb-3" id="loading-section" style="display: none;">
+        <div class="col-12">
+            <div class="card border-0">
+                <div class="card-body text-center py-5">
+                    <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
+                    <h5 class="text-muted">Processando dados...</h5>
+                    <p class="text-muted mb-0">Aguarde enquanto carregamos as informações</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0">
+                <div class="card-header bg-light border-0 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table me-2"></i>
+                        Resultados da Pesquisa
+                    </h5>
+                    <div class="d-flex align-items-center gap-3">
+                        <small class="text-muted" id="info-paginacao">
+                            Mostrando 0 de 0 registros
+                        </small>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="btn-anterior" disabled>
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <span class="btn btn-outline-secondary btn-sm disabled" id="pagina-atual">
+                                Página 1
+                            </span>
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="btn-proximo" disabled>
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="tabela-oscs">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th scope="col">
+                                        <i class="fas fa-hashtag me-1"></i>ID OSC
+                                    </th>
+                                    <th scope="col">
+                                        <i class="fas fa-building me-1"></i>Nome
+                                    </th>
+                                    <th scope="col">
+                                        <i class="fas fa-envelope me-1"></i>Email
+                                    </th>
+                                    <th scope="col">
+                                        <i class="fas fa-map-marker-alt me-1"></i>Endereço
+                                    </th>
+                                    <th scope="col">
+                                        <i class="fas fa-phone me-1"></i>Telefone
+                                    </th>
+                                    <th scope="col">
+                                        <i class="fas fa-tag me-1"></i>Natureza Jurídica
+                                    </th>
+                                    <th scope="col">
+                                        <i class="fas fa-info-circle me-1"></i>Situação
+                                    </th>
+                                    <th scope="col">
+                                        <i class="fas fa-city me-1"></i>Município
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-body">
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-5">
+                                        <i class="fas fa-search fa-2x mb-3 d-block"></i>
+                                        <h6>Nenhum dado carregado</h6>
+                                        <p class="mb-0">Clique em "Filtrar Dados" para carregar os resultados</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Results Section -->
-<div class="results-section">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4>
-            <i class="fas fa-table me-2"></i>Resultados
-            <span class="badge bg-primary ms-2" id="resultCount">0</span>
-        </h4>
-        <div>
-            <button type="button" class="btn btn-success" id="exportBtn" disabled>
-                <i class="fas fa-file-excel me-1"></i>Exportar Excel
-            </button>
+<!-- Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="toast-success" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-success text-white">
+            <i class="fas fa-check-circle me-2"></i>
+            <strong class="me-auto">Sucesso</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toast-success-message">
+            Operação realizada com sucesso!
         </div>
     </div>
-    
-    <!-- Loading -->
-    <div class="loading" id="loading">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Carregando...</span>
+
+    <div id="toast-error" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-danger text-white">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <strong class="me-auto">Erro</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
         </div>
-        <p class="mt-2">Carregando dados...</p>
+        <div class="toast-body" id="toast-error-message">
+            Ocorreu um erro na operação.
+        </div>
     </div>
-    
-    <!-- Results Table -->
-    <div class="table-responsive">
-        <table class="table table-striped table-hover" id="resultsTable">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Nome</th>
-                    <th>Email</th>
-                    <th>Endereço</th>
-                    <th>Telefone</th>
-                    <th>Natureza Jurídica</th>
-                    <th>Município</th>
-                </tr>
-            </thead>
-            <tbody id="resultsBody">
-                <!-- Dados serão carregados via JavaScript -->
-            </tbody>
-        </table>
+
+    <div id="toast-warning" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-warning text-dark">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong class="me-auto">Aviso</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toast-warning-message">
+            Informação importante.
+        </div>
     </div>
-    
-    <!-- Pagination -->
-    <nav aria-label="Navegação de páginas" id="pagination">
-        <ul class="pagination justify-content-center">
-            <!-- Paginação será gerada via JavaScript -->
-        </ul>
-    </nav>
+
+    <div id="toast-info" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-info text-white">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong class="me-auto">Informação</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toast-info-message">
+            Informação útil.
+        </div>
+    </div>
+</div>
+
+<!-- Help Modal -->
+<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="helpModalLabel">
+                    <i class="fas fa-question-circle me-2"></i>Como usar o Dashboard
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-filter text-primary me-2"></i>Filtros de Pesquisa</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Município:</strong> Filtre OSCs por município específico</li>
+                            <li><strong>Natureza Jurídica:</strong> Filtre por tipo de organização</li>
+                            <li><strong>Palavras-chave:</strong> Busque no nome da OSC</li>
+                            <li><strong>Naturezas para Visualizar:</strong> Selecione múltiplas naturezas (Ctrl+clique)</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-mouse-pointer text-success me-2"></i>Ações Disponíveis</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Filtrar Dados:</strong> Aplica os filtros selecionados</li>
+                            <li><strong>Exportar Excel:</strong> Baixa dados filtrados em Excel</li>
+                            <li><strong>Limpar Filtros:</strong> Remove todos os filtros</li>
+                            <li><strong>Mostrar/Ocultar Mapa:</strong> Exibe mapa interativo</li>
+                        </ul>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <h6><i class="fas fa-map text-info me-2"></i>Usando o Mapa</h6>
+                        <ul class="list-unstyled">
+                            <li>• <strong>Cores:</strong> Indicam quantidade de OSCs por município</li>
+                            <li>• <strong>Clique:</strong> Seleciona o município e aplica filtro</li>
+                            <li>• <strong>Hover:</strong> Mostra informações do município</li>
+                            <li>• <strong>Zoom:</strong> Use a roda do mouse ou controles do mapa</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Dica:</strong> Use Enter no campo de palavras-chave para pesquisar rapidamente!
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Fechar
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-$(document).ready(function() {
-    let currentPage = 1;
-    let totalPages = 0;
-    let currentFilters = {};
-    
-    // Função para carregar dados
-    function loadData(page = 1) {
-        $('#loading').show();
-        $('#resultsBody').empty();
-        
-        // Coleta filtros
-        const filters = {
-            municipio: $('#municipio').val(),
-            natureza_juridica: $('#natureza_juridica').val(),
-            palavras_chave: $('#palavras_chave').val(),
-            naturezas_ignorar: [],
-            page: page,
-            per_page: 50
-        };
-        
-        // Coleta naturezas ignoradas
-        $('#naturezasIgnorar input:checked').each(function() {
-            filters.naturezas_ignorar.push($(this).val());
-        });
-        
-        currentFilters = filters;
-        
-        // Faz requisição AJAX
-        $.ajax({
-            url: '{% url "osc_dashboard:filter_data" %}',
-            method: 'POST',
-            data: JSON.stringify(filters),
-            contentType: 'application/json',
-            headers: {
-                'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
-            },
-            success: function(response) {
-                displayResults(response);
-                updatePagination(response);
-                $('#resultCount').text(response.total);
-                $('#exportBtn').prop('disabled', response.total === 0);
-            },
-            error: function(xhr) {
-                console.error('Erro ao carregar dados:', xhr);
-                alert('Erro ao carregar dados. Tente novamente.');
-            },
-            complete: function() {
-                $('#loading').hide();
-            }
-        });
-    }
-    
-    // Função para exibir resultados
-    function displayResults(response) {
-        const tbody = $('#resultsBody');
-        tbody.empty();
-        
-        if (response.data.length === 0) {
-            tbody.append(`
-                <tr>
-                    <td colspan="7" class="text-center text-muted py-4">
-                        <i class="fas fa-inbox fa-2x mb-2"></i>
-                        <p>Nenhum resultado encontrado</p>
-                    </td>
-                </tr>
-            `);
-            return;
-        }
-        
-        response.data.forEach(function(item) {
-            const row = `
-                <tr>
-                    <td><span class="badge bg-secondary">${item.id_osc}</span></td>
-                    <td><strong>${item.nome || '-'}</strong></td>
-                    <td>
-                        ${item.email ? `<a href="mailto:${item.email}" class="text-decoration-none">
-                            <i class="fas fa-envelope me-1"></i>${item.email}
-                        </a>` : '-'}
-                    </td>
-                    <td>${item.endereco || '-'}</td>
-                    <td>${item.telefone || '-'}</td>
-                    <td><span class="badge bg-info">${item.natureza_juridica || '-'}</span></td>
-                    <td><span class="badge bg-success">${item.edmu_nm_municipio || '-'}</span></td>
-                </tr>
-            `;
-            tbody.append(row);
-        });
-    }
-    
-    // Função para atualizar paginação
-    function updatePagination(response) {
-        const pagination = $('#pagination ul');
-        pagination.empty();
-        
-        if (response.total_pages <= 1) return;
-        
-        // Botão anterior
-        const prevDisabled = response.page <= 1 ? 'disabled' : '';
-        pagination.append(`
-            <li class="page-item ${prevDisabled}">
-                <a class="page-link" href="#" data-page="${response.page - 1}">
-                    <i class="fas fa-chevron-left"></i>
-                </a>
-            </li>
-        `);
-        
-        // Páginas
-        const startPage = Math.max(1, response.page - 2);
-        const endPage = Math.min(response.total_pages, response.page + 2);
-        
-        for (let i = startPage; i <= endPage; i++) {
-            const active = i === response.page ? 'active' : '';
-            pagination.append(`
-                <li class="page-item ${active}">
-                    <a class="page-link" href="#" data-page="${i}">${i}</a>
-                </li>
-            `);
-        }
-        
-        // Botão próximo
-        const nextDisabled = response.page >= response.total_pages ? 'disabled' : '';
-        pagination.append(`
-            <li class="page-item ${nextDisabled}">
-                <a class="page-link" href="#" data-page="${response.page + 1}">
-                    <i class="fas fa-chevron-right"></i>
-                </a>
-            </li>
-        `);
-    }
-    
-    // Event listeners
-    $('#filterForm').on('submit', function(e) {
-        e.preventDefault();
-        loadData(1);
-    });
-    
-    $('#limparFiltros').on('click', function() {
-        $('#filterForm')[0].reset();
-        $('#naturezasIgnorar input').prop('checked', false);
-        loadData(1);
-    });
-    
-    $('#exportBtn').on('click', function() {
-        const btn = $(this);
-        btn.prop('disabled', true);
-        btn.html('<i class="fas fa-spinner fa-spin me-1"></i>Exportando...');
-        
-        // Cria formulário temporário para download
-        const form = $('<form>', {
-            method: 'POST',
-            action: '{% url "osc_dashboard:export_data" %}'
-        });
-        
-        form.append($('<input>', {
-            type: 'hidden',
-            name: 'csrfmiddlewaretoken',
-            value: $('[name=csrfmiddlewaretoken]').val()
-        }));
-        
-        // Adiciona filtros ao formulário
-        Object.keys(currentFilters).forEach(key => {
-            if (key !== 'page' && key !== 'per_page') {
-                const value = Array.isArray(currentFilters[key]) ? 
-                    currentFilters[key].join(',') : currentFilters[key];
-                form.append($('<input>', {
-                    type: 'hidden',
-                    name: key,
-                    value: value
-                }));
-            }
-        });
-        
-        $('body').append(form);
-        form.submit();
-        form.remove();
-        
-        // Restaura botão após 2 segundos
-        setTimeout(() => {
-            btn.prop('disabled', false);
-            btn.html('<i class="fas fa-file-excel me-1"></i>Exportar Excel');
-        }, 2000);
-    });
-    
-    // Paginação
-    $(document).on('click', '.pagination .page-link', function(e) {
-        e.preventDefault();
-        const page = $(this).data('page');
-        if (page && !$(this).parent().hasClass('disabled')) {
-            loadData(page);
-        }
-    });
-    
-    // Carrega dados iniciais
-    loadData();
-});
+    var filterDataUrl = "{% url 'osc_dashboard:filter_data' %}";
+    var exportDataUrl = "{% url 'osc_dashboard:export_data' %}";
 </script>
 
-<!-- CSRF Token -->
-{% csrf_token %}
+<script src="{% static 'js/mapa_temp.js' %}"></script>
+<script src="{% static 'js/dashboard.js' %}"></script>
 {% endblock %}

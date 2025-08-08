@@ -1,0 +1,180 @@
+{% extends 'osc_dashboard/base.html' %}
+{% load static %}
+
+{% block t                    <!-- Debug Info -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="alert alert-info" id="debug-info">
+                                <strong>Debug:</strong> <span id="debug-text">Aguardando carregamento...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Busca do Mapa -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="map-search-container">
+                                <input type="text" id="map-search" class="form-control" placeholder="Buscar município no mapa...">
+                                <div id="map-search-results" class="map-search-results"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mapa Leaflet -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div id="map" class="w-100"></div>
+                        </div>
+                    </div>d OSCs Paraná{% endblock %}
+
+{% block content %}
+<!-- CSRF Token -->
+{% csrf_token %}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">
+                        <i class="fas fa-chart-bar"></i> Dashboard de OSCs do Paraná
+                    </h4>
+                    <p class="card-subtitle text-muted">
+                        Total de OSCs: <span id="total-oscs">{{ total_registros|default:0 }}</span>
+                    </p>
+                </div>
+                <div class="card-body">
+                    <!-- Filtros -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <label for="municipio" class="form-label">Município</label>
+                            <select class="form-select" id="municipio">
+                                <option value="">Todos os municípios</option>
+                                {% for municipio in municipios %}
+                                <option value="{{ municipio }}">{{ municipio }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="natureza_juridica" class="form-label">Natureza Jurídica</label>
+                            <select class="form-select" id="natureza_juridica">
+                                <option value="">Todas as naturezas</option>
+                                {% for natureza in naturezas_juridicas %}
+                                <option value="{{ natureza }}">{{ natureza }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="palavras_chave" class="form-label">Palavras-chave (Nome)</label>
+                            <input type="text" class="form-control" id="palavras_chave" placeholder="Digite palavras-chave...">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="naturezas_ver" class="form-label">Naturezas Jurídicas para Visualizar</label>
+                            <select class="form-select" id="naturezas_ver" multiple>
+                                {% for natureza in naturezas_juridicas %}
+                                <option value="{{ natureza }}">{{ natureza }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">Selecione as naturezas que deseja visualizar. Se nenhuma for selecionada, todas serão mostradas.</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Botões de ação -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <button type="button" class="btn btn-primary" id="btn-filtrar">
+                                <i class="fas fa-filter"></i> Filtrar
+                            </button>
+                            <button type="button" class="btn btn-success" id="btn-exportar">
+                                <i class="fas fa-download"></i> Exportar Excel
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="btn-limpar">
+                                <i class="fas fa-eraser"></i> Limpar Filtros
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Debug Info -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="alert alert-info" id="debug-info">
+                                <strong>Debug:</strong> <span id="debug-text">Aguardando carregamento...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mapa Leaflet -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div id="map" style="height: 500px; width: 100%; border: 2px solid #ccc; border-radius: 8px; margin: 20px 0;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Loading Simples -->
+                    <div class="row mb-3" id="loading-row" style="display: none;">
+                        <div class="col-12 text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Carregando...</span>
+                            </div>
+                            <p class="mt-2">Processando dados...</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Resultados -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover" id="tabela-oscs">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>ID OSC</th>
+                                            <th>Nome</th>
+                                            <th>Email</th>
+                                            <th>Endereço</th>
+                                            <th>Telefone</th>
+                                            <th>Natureza Jurídica</th>
+                                            <th>Situação Cadastral</th>
+                                            <th>Município</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabela-body">
+                                        <!-- Dados serão carregados via AJAX -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Paginação -->
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <div>
+                                    <span id="info-paginacao">Mostrando 0 de 0 registros</span>
+                                </div>
+                                <div>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="btn-anterior">
+                                        <i class="fas fa-chevron-left"></i> Anterior
+                                    </button>
+                                    <span class="mx-2" id="pagina-atual">Página 1</span>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="btn-proximo">
+                                        Próximo <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    var filterDataUrl = "{% url 'osc_dashboard:filter_data' %}";
+</script>
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
+    crossorigin=""></script>
+<script src="{% static 'js/mapa_temp.js' %}"></script>
+<script src="{% static 'js/dashboard.js' %}"></script>
+{% endblock %}
