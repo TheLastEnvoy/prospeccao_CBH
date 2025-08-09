@@ -7,7 +7,7 @@ import sqlite3
 import os
 from pathlib import Path
 
-CSV_PATH = 'data/dados_osc_PR_completo_corrigido.csv'
+CSV_PATH = 'data/dados_osc_PR_FINAL.csv'
 NEW_DB_PATH = 'data/oscs_parana_novo.db'
 TABLE_NAME = 'oscs'
 

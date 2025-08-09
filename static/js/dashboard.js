@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentFilters = {};
     let keywords = []; // Array para armazenar múltiplas palavras-chave
     let selectedMunicipios = []; // Array para armazenar múltiplos municípios
+    let selectedNaturezas = []; // Array para armazenar múltiplas naturezas jurídicas
     let allMunicipios = []; // Lista de todos os municípios disponíveis
 
     // Utilitários
@@ -76,6 +77,10 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedMunicipios = [];
         updateMunicipiosList();
 
+        // Limpar naturezas jurídicas múltiplas
+        selectedNaturezas = [];
+        updateNaturezasList();
+
         // Reset current filters
         currentFilters = {};
     }
@@ -114,7 +119,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function getKeywordsString() {
-        return keywords.join(' ');
+        // Pegar palavras-chave do array E do campo de input (caso o usuário não tenha clicado em +)
+        const inputKeywords = document.getElementById('palavras_chave').value.trim();
+        const allKeywords = [...keywords];
+
+        // Adicionar palavras do input que não estão no array
+        if (inputKeywords) {
+            const inputWords = inputKeywords.split(/\s+/).filter(word => word.trim());
+            inputWords.forEach(word => {
+                if (!allKeywords.includes(word.trim())) {
+                    allKeywords.push(word.trim());
+                }
+            });
+        }
+
+        return allKeywords.join(' ');
     }
 
     // Funções para gerenciar múltiplos municípios
@@ -160,6 +179,41 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function getMunicipiosString() {
         return selectedMunicipios.join(',');
+    }
+
+    // Funções para gerenciar múltiplas naturezas jurídicas
+    function addNatureza() {
+        const select = document.getElementById('natureza_juridica');
+        const natureza = select.value.trim();
+
+        if (natureza && !selectedNaturezas.includes(natureza)) {
+            selectedNaturezas.push(natureza);
+            select.value = '';
+            updateNaturezasList();
+        }
+    }
+
+    function removeNatureza(natureza) {
+        selectedNaturezas = selectedNaturezas.filter(n => n !== natureza);
+        updateNaturezasList();
+    }
+
+    function updateNaturezasList() {
+        const container = document.getElementById('naturezas-list');
+        if (!container) return;
+
+        container.innerHTML = selectedNaturezas.map(natureza =>
+            `<span class="natureza-tag">
+                ${natureza}
+                <button type="button" class="remove-natureza" onclick="removeNatureza('${natureza.replace(/'/g, "\\\'")}')" title="Remover">
+                    <i class="fas fa-times"></i>
+                </button>
+            </span>`
+        ).join('');
+    }
+
+    function getNaturezasString() {
+        return selectedNaturezas.join(',');
     }
 
     function filterMunicipios(query) {
@@ -326,7 +380,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function getFilters() {
         return {
             municipio: getMunicipiosString(),
-            natureza_juridica: document.getElementById('natureza_juridica').value,
+            natureza_juridica: getNaturezasString(),
             palavras_chave: getKeywordsString(),
             naturezas_ver: Array.from(document.getElementById('naturezas_ver').selectedOptions).map(option => option.value)
         };
@@ -585,6 +639,19 @@ document.addEventListener('DOMContentLoaded', function() {
         addKeyword();
     });
 
+    // Event listeners para naturezas jurídicas múltiplas
+    document.getElementById('btn-add-natureza').addEventListener('click', function() {
+        addNatureza();
+    });
+
+    // Permitir adicionar natureza com Enter
+    document.getElementById('natureza_juridica').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addNatureza();
+        }
+    });
+
     // Event listeners para municípios múltiplos
     document.getElementById('btn-add-municipio').addEventListener('click', function() {
         addMunicipio();
@@ -672,4 +739,5 @@ document.addEventListener('DOMContentLoaded', function() {
     // Tornar funções globais para uso em onclick
     window.removeKeyword = removeKeyword;
     window.removeMunicipio = removeMunicipio;
+    window.removeNatureza = removeNatureza;
 });

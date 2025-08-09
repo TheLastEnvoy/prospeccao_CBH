@@ -258,8 +258,8 @@ def fix_spreadsheet_encoding(input_file: str, output_file: str = None,
 if __name__ == "__main__":
     try:
         # Corrige o CSV 'dados_osc_PR_completo_corrigido.csv' por padrão
-        arquivo_entrada = "data/dados_osc_PR_completo_corrigido.csv"
-        arquivo_saida = "data/dados_osc_PR_completo_corrigido_utf8.csv"
+        arquivo_entrada = "data/dados_osc_PR_completo.csv"
+        arquivo_saida = "data/dados_osc_PR_completo_corrigido.csv"
 
         if not os.path.exists(arquivo_entrada):
             print(f"ERRO: Arquivo '{arquivo_entrada}' não encontrado!")

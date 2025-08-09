@@ -99,18 +99,33 @@
                                 </div>
                                 <div id="municipios-list" class="municipios-list mt-2"></div>
                                 <div id="municipio-suggestions" class="municipio-suggestions"></div>
+                                <small class="form-text text-muted">
+                                    Busca <strong>exata</strong> por nome do município
+                                </small>
                             </div>
                         </div>
                         <div class="col-lg-3 col-md-6">
                             <label for="natureza_juridica" class="form-label fw-semibold">
                                 <i class="fas fa-tag me-1"></i>Natureza Jurídica
                             </label>
-                            <select class="form-select" id="natureza_juridica">
-                                <option value="">Todas as naturezas</option>
-                                {% for natureza in naturezas_juridicas %}
-                                <option value="{{ natureza }}">{{ natureza }}</option>
-                                {% endfor %}
-                            </select>
+                            <div class="naturezas-container">
+                                <div class="input-group">
+                                    <select class="form-select" id="natureza_juridica">
+                                        <option value="">Selecione uma natureza...</option>
+                                        {% for natureza in naturezas_juridicas %}
+                                        <option value="{{ natureza }}">{{ natureza }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button class="btn btn-outline-warning" type="button" id="btn-add-natureza" title="Adicionar natureza jurídica">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                <div id="naturezas-list" class="naturezas-list mt-2"></div>
+                                <small class="form-text text-muted">
+                                    💡 <strong>Selecione e clique +</strong> para adicionar múltiplas naturezas<br>
+                                    Busca OSCs de <strong>qualquer uma</strong> das naturezas selecionadas
+                                </small>
+                            </div>
                         </div>
                         <div class="col-lg-3 col-md-6">
                             <label for="palavras_chave" class="form-label fw-semibold">
@@ -119,12 +134,16 @@
                             <div class="keywords-container">
                                 <div class="input-group">
                                     <input type="text" class="form-control" id="palavras_chave"
-                                           placeholder="Digite palavras-chave...">
+                                           placeholder="Digite e pressione Enter ou clique +">
                                     <button class="btn btn-outline-primary" type="button" id="btn-add-keyword" title="Adicionar palavra-chave">
                                         <i class="fas fa-plus"></i>
                                     </button>
                                 </div>
                                 <div id="keywords-list" class="keywords-list mt-2"></div>
+                                <small class="form-text text-muted">
+                                    💡 <strong>Digite uma palavra e pressione Enter</strong> para adicionar à busca<br>
+                                    Busca OSCs que contenham <strong>qualquer uma</strong> das palavras no nome
+                                </small>
                             </div>
                         </div>
                         <div class="col-lg-3 col-md-6">
@@ -244,15 +263,15 @@
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
+                    <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
                         <table class="table table-hover mb-0" id="tabela-oscs">
                             <thead class="table-dark">
                                 <tr>
-                                    <th scope="col">
-                                        <i class="fas fa-hashtag me-1"></i>ID OSC
+                                    <th scope="col" class="text-center">
+                                        <i class="fas fa-hashtag me-1"></i>ID
                                     </th>
                                     <th scope="col">
-                                        <i class="fas fa-building me-1"></i>Nome
+                                        <i class="fas fa-building me-1"></i>Nome da OSC
                                     </th>
                                     <th scope="col">
                                         <i class="fas fa-envelope me-1"></i>Email
@@ -260,13 +279,13 @@
                                     <th scope="col">
                                         <i class="fas fa-map-marker-alt me-1"></i>Endereço
                                     </th>
-                                    <th scope="col">
+                                    <th scope="col" class="text-center">
                                         <i class="fas fa-phone me-1"></i>Telefone
                                     </th>
                                     <th scope="col">
                                         <i class="fas fa-tag me-1"></i>Natureza Jurídica
                                     </th>
-                                    <th scope="col">
+                                    <th scope="col" class="text-center">
                                         <i class="fas fa-info-circle me-1"></i>Situação
                                     </th>
                                     <th scope="col">
@@ -279,7 +298,8 @@
                                     <td colspan="8" class="text-center text-muted py-5">
                                         <i class="fas fa-search fa-2x mb-3 d-block"></i>
                                         <h6>Nenhum dado carregado</h6>
-                                        <p class="mb-0">Clique em "Filtrar Dados" para carregar os resultados</p>
+                                        <p class="mb-0">Use os filtros acima e clique em "Filtrar Dados" para carregar os resultados</p>
+                                        <small class="text-muted">💡 Dica: Selecione um município e/ou palavras-chave para começar</small>
                                     </td>
                                 </tr>
                             </tbody>
@@ -353,10 +373,10 @@
                     <div class="col-md-6">
                         <h6><i class="fas fa-filter text-primary me-2"></i>Filtros de Pesquisa</h6>
                         <ul class="list-unstyled">
-                            <li><strong>Município:</strong> Filtre OSCs por município específico</li>
-                            <li><strong>Natureza Jurídica:</strong> Filtre por tipo de organização</li>
-                            <li><strong>Palavras-chave:</strong> Busque no nome da OSC</li>
-                            <li><strong>Naturezas para Visualizar:</strong> Selecione múltiplas naturezas (Ctrl+clique)</li>
+                            <li><strong>Município:</strong> Selecione múltiplos municípios</li>
+                            <li><strong>Natureza Jurídica:</strong> Selecione múltiplas naturezas jurídicas</li>
+                            <li><strong>Palavras-chave:</strong> Adicione múltiplas palavras para busca no nome</li>
+                            <li><strong>Naturezas para Visualizar:</strong> Campo alternativo para seleção múltipla (Ctrl+clique)</li>
                         </ul>
                     </div>
                     <div class="col-md-6">
@@ -403,7 +423,7 @@
 </script>
 
 <!-- Lista de municípios para JavaScript -->
-<script type="application/json" data-municipios>{{ municipios|safe }}</script>
+<script type="application/json" data-municipios>{{ municipios_json|safe }}</script>
 
 <script src="{% static 'js/mapa_temp.js' %}"></script>
 <script src="{% static 'js/dashboard.js' %}"></script>

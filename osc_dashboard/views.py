@@ -91,7 +91,8 @@ def dashboard(request):
     filter_options = get_filter_options()
 
     context = {
-        'municipios': json.dumps(filter_options['municipios']),  # Converte para JSON
+        'municipios': filter_options['municipios'],  # Lista para contagem no template
+        'municipios_json': json.dumps(filter_options['municipios']),  # JSON para JavaScript
         'naturezas_juridicas': filter_options['naturezas_juridicas'],
         'total_registros': filter_options['total_registros']
     }
@@ -119,21 +120,27 @@ def export_data(request):
             params = []
             
             if municipio:
-                # Separa os municípios e faz busca OR
+                # Separa os municípios e faz busca OR com igualdade exata
                 municipios = [m.strip() for m in municipio.split(',') if m.strip()]
                 if municipios:
                     municipio_conditions = []
                     for mun in municipios:
-                        municipio_conditions.append("edmu_nm_municipio LIKE ?")
-                        params.append(f'%{mun}%')
+                        municipio_conditions.append("edmu_nm_municipio = ?")
+                        params.append(mun)
                     query += f" AND ({' OR '.join(municipio_conditions)})"
             
             if natureza_juridica:
-                query += " AND natureza_juridica LIKE ?"
-                params.append(f'%{natureza_juridica}%')
+                # Separa as naturezas jurídicas e faz busca OR com igualdade exata
+                naturezas = [n.strip() for n in natureza_juridica.split(',') if n.strip()]
+                if naturezas:
+                    natureza_conditions = []
+                    for natureza in naturezas:
+                        natureza_conditions.append("natureza_juridica = ?")
+                        params.append(natureza)
+                    query += f" AND ({' OR '.join(natureza_conditions)})"
             
             if palavras_chave:
-                # Separa as palavras-chave e faz busca OR
+                # Separa as palavras-chave e faz busca OR (OSC deve conter QUALQUER uma das palavras)
                 keywords = [kw.strip() for kw in palavras_chave.split() if kw.strip()]
                 if keywords:
                     keyword_conditions = []
@@ -151,9 +158,12 @@ def export_data(request):
             # Executa query
             df = pd.read_sql_query(query, conn, params=params)
             conn.close()
-            
+
             if df.empty:
                 return JsonResponse({'error': 'Nenhum dado encontrado'}, status=404)
+
+            # Substitui NaN por string vazia para Excel
+            df = df.fillna('')
             
             # Renomeia colunas para melhor visualização
             df_export = df.copy()
@@ -220,21 +230,27 @@ def filter_data(request):
             params = []
             
             if municipio:
-                # Separa os municípios e faz busca OR
+                # Separa os municípios e faz busca OR com igualdade exata
                 municipios = [m.strip() for m in municipio.split(',') if m.strip()]
                 if municipios:
                     municipio_conditions = []
                     for mun in municipios:
-                        municipio_conditions.append("edmu_nm_municipio LIKE ?")
-                        params.append(f'%{mun}%')
+                        municipio_conditions.append("edmu_nm_municipio = ?")
+                        params.append(mun)
                     count_query += f" AND ({' OR '.join(municipio_conditions)})"
             
             if natureza_juridica:
-                count_query += " AND natureza_juridica LIKE ?"
-                params.append(f'%{natureza_juridica}%')
+                # Separa as naturezas jurídicas e faz busca OR com igualdade exata
+                naturezas = [n.strip() for n in natureza_juridica.split(',') if n.strip()]
+                if naturezas:
+                    natureza_conditions = []
+                    for natureza in naturezas:
+                        natureza_conditions.append("natureza_juridica = ?")
+                        params.append(natureza)
+                    count_query += f" AND ({' OR '.join(natureza_conditions)})"
             
             if palavras_chave:
-                # Separa as palavras-chave e faz busca OR
+                # Separa as palavras-chave e faz busca OR (OSC deve conter QUALQUER uma das palavras)
                 keywords = [kw.strip() for kw in palavras_chave.split() if kw.strip()]
                 if keywords:
                     keyword_conditions = []
@@ -262,9 +278,18 @@ def filter_data(request):
             # Executa query de dados
             df = pd.read_sql_query(data_query, conn, params=data_params)
             conn.close()
-            
-            # Converte para lista de dicionários
-            data_list = df.to_dict('records')
+
+            # Converte para lista de dicionários e trata NaN
+            data_list = []
+            for _, row in df.iterrows():
+                row_dict = {}
+                for col, value in row.items():
+                    # Converte NaN para None
+                    if pd.isna(value):
+                        row_dict[col] = None
+                    else:
+                        row_dict[col] = value
+                data_list.append(row_dict)
             
             return JsonResponse({
                 'data': data_list,

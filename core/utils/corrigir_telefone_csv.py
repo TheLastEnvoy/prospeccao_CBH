@@ -25,6 +25,6 @@ def corrigir_telefones_csv(arquivo_entrada, arquivo_saida):
         print("Coluna 'telefone' não encontrada no arquivo.")
 
 if __name__ == "__main__":
-    arquivo_entrada = "data/dados_osc_PR_completo.csv"
-    arquivo_saida = "data/dados_osc_PR_completo_corrigido.csv"
+    arquivo_entrada = "data/dados_osc_PR_completo_corrigido.csv"
+    arquivo_saida = "data/dados_osc_PR_FINAL.csv"
     corrigir_telefones_csv(arquivo_entrada, arquivo_saida)

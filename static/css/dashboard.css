@@ -408,3 +408,207 @@
     border-color: #4caf50;
     color: white;
 }
+
+/* Estilos para múltiplas naturezas jurídicas */
+.naturezas-container {
+    position: relative;
+}
+
+.naturezas-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    min-height: 0;
+}
+
+.natureza-tag {
+    display: inline-flex;
+    align-items: center;
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 4px 8px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid #ffeaa7;
+    animation: fadeIn 0.3s ease;
+}
+
+.natureza-tag .remove-natureza {
+    background: none;
+    border: none;
+    color: #856404;
+    margin-left: 5px;
+    cursor: pointer;
+    font-size: 10px;
+    padding: 0;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.natureza-tag .remove-natureza:hover {
+    background-color: #f44336;
+    color: white;
+}
+
+#btn-add-natureza {
+    border-left: none;
+}
+
+#btn-add-natureza:hover {
+    background-color: #ff9800;
+    border-color: #ff9800;
+    color: white;
+}
+
+/* Estilos para melhorar a tabela de resultados */
+.table-responsive {
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+#tabela-oscs {
+    margin-bottom: 0;
+    font-size: 14px;
+}
+
+#tabela-oscs th {
+    background: linear-gradient(135deg, #2c3e50, #3498db);
+    color: white;
+    font-weight: 600;
+    border: none;
+    padding: 12px 8px;
+    font-size: 13px;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+#tabela-oscs td {
+    padding: 10px 8px;
+    border-color: #e9ecef;
+    vertical-align: middle;
+    word-wrap: break-word;
+    max-width: 200px;
+}
+
+/* Larguras específicas para cada coluna */
+#tabela-oscs th:nth-child(1), /* ID OSC */
+#tabela-oscs td:nth-child(1) {
+    width: 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+#tabela-oscs th:nth-child(2), /* Nome */
+#tabela-oscs td:nth-child(2) {
+    width: 250px;
+    min-width: 200px;
+    max-width: 300px;
+}
+
+#tabela-oscs th:nth-child(3), /* Email */
+#tabela-oscs td:nth-child(3) {
+    width: 200px;
+    min-width: 150px;
+    max-width: 250px;
+}
+
+#tabela-oscs th:nth-child(4), /* Endereço */
+#tabela-oscs td:nth-child(4) {
+    width: 250px;
+    min-width: 200px;
+    max-width: 300px;
+}
+
+#tabela-oscs th:nth-child(5), /* Telefone */
+#tabela-oscs td:nth-child(5) {
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
+}
+
+#tabela-oscs th:nth-child(6), /* Natureza Jurídica */
+#tabela-oscs td:nth-child(6) {
+    width: 180px;
+    min-width: 150px;
+    max-width: 200px;
+}
+
+#tabela-oscs th:nth-child(7), /* Situação */
+#tabela-oscs td:nth-child(7) {
+    width: 120px;
+    min-width: 100px;
+    max-width: 120px;
+}
+
+#tabela-oscs th:nth-child(8), /* Município */
+#tabela-oscs td:nth-child(8) {
+    width: 150px;
+    min-width: 120px;
+    max-width: 180px;
+}
+
+/* Quebra de texto para colunas longas */
+#tabela-oscs td:nth-child(2), /* Nome */
+#tabela-oscs td:nth-child(3), /* Email */
+#tabela-oscs td:nth-child(4) { /* Endereço */
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+/* Hover effect para linhas */
+#tabela-oscs tbody tr:hover {
+    background-color: rgba(52, 152, 219, 0.05);
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 1200px) {
+    #tabela-oscs {
+        font-size: 12px;
+    }
+
+    #tabela-oscs th,
+    #tabela-oscs td {
+        padding: 8px 6px;
+    }
+}
+
+@media (max-width: 768px) {
+    .table-responsive {
+        border-radius: 10px;
+    }
+
+    #tabela-oscs {
+        font-size: 11px;
+    }
+
+    #tabela-oscs th,
+    #tabela-oscs td {
+        padding: 6px 4px;
+    }
+
+    /* Reduz larguras em telas pequenas */
+    #tabela-oscs th:nth-child(2),
+    #tabela-oscs td:nth-child(2) {
+        width: 150px;
+        min-width: 120px;
+    }
+
+    #tabela-oscs th:nth-child(4),
+    #tabela-oscs td:nth-child(4) {
+        width: 180px;
+        min-width: 150px;
+    }
+}

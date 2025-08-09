@@ -110,6 +110,7 @@ def extrair_todas_oscs():
     
     # Carrega os IDs das OSCs com delimitador correto
     try:
+        
         df = pd.read_csv('data/osc_PR.CSV', encoding='latin1', sep=';', on_bad_lines='skip')
         
         # Verifica as colunas disponíveis
