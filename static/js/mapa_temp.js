@@ -87,9 +87,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const count = buscarOSCsPorMunicipio(municipio);
 
         // Log para debug específico para alguns municípios importantes
-        if (municipio === 'Curitiba' || municipio === 'Londrina' || municipio === 'Maringá') {
-            console.log(`Município importante: "${municipio}", OSCs: ${count}`);
-            console.log('Dados disponíveis para este município:', oscsData[municipio]);
+        if (municipio === 'Curitiba' || municipio === 'Londrina' || municipio === 'Maringá' ||
+            municipio === 'CORONEL DOMINGO SOARES' || municipio === 'DIAMANTE DO OESTE') {
+            console.log(`🔍 Município importante: "${municipio}", OSCs: ${count}`);
+            console.log('   Dados disponíveis para este município:', oscsData[municipio]);
+
+            // Debug específico para Coronel Domingo Soares
+            if (municipio === 'CORONEL DOMINGO SOARES') {
+                console.log('🎯 DEBUG CORONEL DOMINGO SOARES:');
+                console.log('   Variações disponíveis:');
+                Object.keys(oscsData).forEach(key => {
+                    if (key.toLowerCase().includes('coronel') && key.toLowerCase().includes('domingo')) {
+                        console.log(`      "${key}": ${oscsData[key]} OSCs`);
+                    }
+                });
+            }
         }
 
         return {
@@ -362,9 +374,24 @@ document.addEventListener('DOMContentLoaded', function() {
     function buscarOSCsPorMunicipio(municipio) {
         if (!municipio) return 0;
 
+        // Debug específico para Coronel Domingo Soares
+        const isCoronelDomingo = municipio === 'CORONEL DOMINGO SOARES' ||
+                                municipio.toLowerCase().includes('coronel') && municipio.toLowerCase().includes('domingo');
+
+        if (isCoronelDomingo) {
+            console.log(`🔍 Buscando OSCs para: "${municipio}"`);
+        }
+
         // 1. Busca exata
         if (oscsData[municipio] !== undefined) {
+            if (isCoronelDomingo) {
+                console.log(`   ✅ Busca exata encontrou: ${oscsData[municipio]} OSCs`);
+            }
             return oscsData[municipio];
+        }
+
+        if (isCoronelDomingo) {
+            console.log(`   ❌ Busca exata falhou para: "${municipio}"`);
         }
 
         // 2. Busca com normalização básica (maiúscula/minúscula)
@@ -400,7 +427,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (melhorMatch) {
             console.log(`✅ Correspondência encontrada: "${municipio}" -> "${melhorMatch}" (score: ${melhorScore.toFixed(2)})`);
+            if (isCoronelDomingo) {
+                console.log(`   🎯 CORONEL DOMINGO: Retornando ${oscsData[melhorMatch]} OSCs`);
+            }
             return oscsData[melhorMatch];
+        }
+
+        if (isCoronelDomingo) {
+            console.log(`   ❌ Nenhuma correspondência por similaridade encontrada`);
         }
 
         // 5. Busca por contenção (uma string contém a outra)
@@ -417,6 +451,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Log para debug de municípios não encontrados
         console.warn(`❌ Município não encontrado: "${municipio}"`);
+
+        if (isCoronelDomingo) {
+            console.warn(`🔍 DEBUG CORONEL DOMINGO - Chaves disponíveis com 'coronel':`);
+            Object.keys(oscsData).forEach(key => {
+                if (key.toLowerCase().includes('coronel')) {
+                    console.warn(`   "${key}": ${oscsData[key]} OSCs`);
+                }
+            });
+        }
+
         console.warn(`   Municípios disponíveis similares:`,
             municipiosDisponiveis
                 .map(m => ({ nome: m, score: calcularSimilaridade(municipio, m) }))
