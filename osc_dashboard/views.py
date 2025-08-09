@@ -66,16 +66,21 @@ def get_filter_options():
         # Obtém naturezas jurídicas únicas
         cursor.execute("SELECT DISTINCT natureza_juridica FROM oscs WHERE natureza_juridica != '' ORDER BY natureza_juridica")
         naturezas_juridicas = [row[0] for row in cursor.fetchall()]
-        
+
+        # Obtém situações cadastrais únicas
+        cursor.execute("SELECT DISTINCT situacao_cadastral FROM oscs WHERE situacao_cadastral != '' ORDER BY situacao_cadastral")
+        situacoes_cadastrais = [row[0] for row in cursor.fetchall()]
+
         # Obtém total de registros
         cursor.execute("SELECT COUNT(*) FROM oscs")
         total_registros = cursor.fetchone()[0]
-        
+
         conn.close()
-        
+
         return {
             'municipios': municipios,
             'naturezas_juridicas': naturezas_juridicas,
+            'situacoes_cadastrais': situacoes_cadastrais,
             'total_registros': total_registros
         }
     except Exception as e:
@@ -83,6 +88,7 @@ def get_filter_options():
         return {
             'municipios': [],
             'naturezas_juridicas': [],
+            'situacoes_cadastrais': [],
             'total_registros': 0
         }
 
@@ -94,6 +100,7 @@ def dashboard(request):
         'municipios': filter_options['municipios'],  # Lista para contagem no template
         'municipios_json': json.dumps(filter_options['municipios']),  # JSON para JavaScript
         'naturezas_juridicas': filter_options['naturezas_juridicas'],
+        'situacoes_cadastrais': filter_options['situacoes_cadastrais'],
         'total_registros': filter_options['total_registros']
     }
 
@@ -148,6 +155,26 @@ def export_data(request):
                         keyword_conditions.append("nome LIKE ?")
                         params.append(f'%{keyword}%')
                     query += f" AND ({' OR '.join(keyword_conditions)})"
+
+            if palavras_excluir:
+                # Separa as palavras para excluir e faz busca NOT LIKE
+                exclude_keywords = [kw.strip() for kw in palavras_excluir.split() if kw.strip()]
+                if exclude_keywords:
+                    exclude_conditions = []
+                    for keyword in exclude_keywords:
+                        exclude_conditions.append("nome NOT LIKE ?")
+                        params.append(f'%{keyword}%')
+                    query += f" AND ({' AND '.join(exclude_conditions)})"
+
+            if situacao_cadastral:
+                # Separa as situações cadastrais e faz busca OR com igualdade exata
+                situacoes = [s.strip() for s in situacao_cadastral.split(',') if s.strip()]
+                if situacoes:
+                    situacao_conditions = []
+                    for situacao in situacoes:
+                        situacao_conditions.append("situacao_cadastral = ?")
+                        params.append(situacao)
+                    query += f" AND ({' OR '.join(situacao_conditions)})"
             
             # Filtra apenas as naturezas jurídicas selecionadas
             if naturezas_ver:
@@ -218,6 +245,8 @@ def filter_data(request):
             municipio = data.get('municipio', '')
             natureza_juridica = data.get('natureza_juridica', '')
             palavras_chave = data.get('palavras_chave', '')
+            palavras_excluir = data.get('palavras_excluir', '')  # Novo: palavras para excluir
+            situacao_cadastral = data.get('situacao_cadastral', '')  # Novo: situação cadastral
             naturezas_ver = data.get('naturezas_ver', [])  # Mudança: agora são as naturezas que quer ver
             page = data.get('page', 1)
             per_page = data.get('per_page', 50)
@@ -258,6 +287,26 @@ def filter_data(request):
                         keyword_conditions.append("nome LIKE ?")
                         params.append(f'%{keyword}%')
                     count_query += f" AND ({' OR '.join(keyword_conditions)})"
+
+            if palavras_excluir:
+                # Separa as palavras para excluir e faz busca NOT LIKE
+                exclude_keywords = [kw.strip() for kw in palavras_excluir.split() if kw.strip()]
+                if exclude_keywords:
+                    exclude_conditions = []
+                    for keyword in exclude_keywords:
+                        exclude_conditions.append("nome NOT LIKE ?")
+                        params.append(f'%{keyword}%')
+                    count_query += f" AND ({' AND '.join(exclude_conditions)})"
+
+            if situacao_cadastral:
+                # Separa as situações cadastrais e faz busca OR com igualdade exata
+                situacoes = [s.strip() for s in situacao_cadastral.split(',') if s.strip()]
+                if situacoes:
+                    situacao_conditions = []
+                    for situacao in situacoes:
+                        situacao_conditions.append("situacao_cadastral = ?")
+                        params.append(situacao)
+                    count_query += f" AND ({' OR '.join(situacao_conditions)})"
             
             # Filtra apenas as naturezas jurídicas selecionadas
             if naturezas_ver:

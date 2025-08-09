@@ -466,6 +466,120 @@
     color: white;
 }
 
+/* Estilos para palavras-chave de exclusão */
+.exclude-keywords-container {
+    position: relative;
+}
+
+.exclude-keywords-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    min-height: 0;
+}
+
+.exclude-keyword-tag {
+    display: inline-flex;
+    align-items: center;
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 4px 8px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid #f5c6cb;
+    animation: fadeIn 0.3s ease;
+}
+
+.exclude-keyword-tag .remove-exclude-keyword {
+    background: none;
+    border: none;
+    color: #721c24;
+    margin-left: 5px;
+    cursor: pointer;
+    font-size: 10px;
+    padding: 0;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.exclude-keyword-tag .remove-exclude-keyword:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+#btn-add-exclude-keyword {
+    border-left: none;
+}
+
+#btn-add-exclude-keyword:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+/* Estilos para múltiplas situações cadastrais */
+.situacoes-container {
+    position: relative;
+}
+
+.situacoes-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    min-height: 0;
+}
+
+.situacao-tag {
+    display: inline-flex;
+    align-items: center;
+    background-color: #d1ecf1;
+    color: #0c5460;
+    padding: 4px 8px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid #bee5eb;
+    animation: fadeIn 0.3s ease;
+}
+
+.situacao-tag .remove-situacao {
+    background: none;
+    border: none;
+    color: #0c5460;
+    margin-left: 5px;
+    cursor: pointer;
+    font-size: 10px;
+    padding: 0;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.situacao-tag .remove-situacao:hover {
+    background-color: #17a2b8;
+    color: white;
+}
+
+#btn-add-situacao {
+    border-left: none;
+}
+
+#btn-add-situacao:hover {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+    color: white;
+}
+
 /* Estilos para melhorar a tabela de resultados */
 .table-responsive {
     border-radius: 15px;

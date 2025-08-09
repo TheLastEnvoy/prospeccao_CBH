@@ -8,8 +8,10 @@ document.addEventListener('DOMContentLoaded', function() {
     let totalRecords = 0;
     let currentFilters = {};
     let keywords = []; // Array para armazenar múltiplas palavras-chave
+    let excludeKeywords = []; // Array para armazenar palavras-chave de exclusão
     let selectedMunicipios = []; // Array para armazenar múltiplos municípios
     let selectedNaturezas = []; // Array para armazenar múltiplas naturezas jurídicas
+    let selectedSituacoes = []; // Array para armazenar múltiplas situações cadastrais
     let allMunicipios = []; // Lista de todos os municípios disponíveis
 
     // Utilitários
@@ -67,11 +69,17 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('municipio').value = '';
         document.getElementById('natureza_juridica').value = '';
         document.getElementById('palavras_chave').value = '';
+        document.getElementById('palavras_excluir').value = '';
+        document.getElementById('situacao_cadastral').value = '';
         document.getElementById('naturezas_ver').selectedIndex = -1;
 
         // Limpar palavras-chave múltiplas
         keywords = [];
         updateKeywordsList();
+
+        // Limpar palavras-chave de exclusão
+        excludeKeywords = [];
+        updateExcludeKeywordsList();
 
         // Limpar municípios múltiplos
         selectedMunicipios = [];
@@ -80,6 +88,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Limpar naturezas jurídicas múltiplas
         selectedNaturezas = [];
         updateNaturezasList();
+
+        // Limpar situações cadastrais múltiplas
+        selectedSituacoes = [];
+        updateSituacoesList();
 
         // Reset current filters
         currentFilters = {};
@@ -134,6 +146,55 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         return allKeywords.join(' ');
+    }
+
+    // Funções para gerenciar palavras-chave de exclusão
+    function addExcludeKeyword() {
+        const input = document.getElementById('palavras_excluir');
+        const keyword = input.value.trim();
+
+        if (keyword && !excludeKeywords.includes(keyword)) {
+            excludeKeywords.push(keyword);
+            input.value = '';
+            updateExcludeKeywordsList();
+        }
+    }
+
+    function removeExcludeKeyword(keyword) {
+        excludeKeywords = excludeKeywords.filter(k => k !== keyword);
+        updateExcludeKeywordsList();
+    }
+
+    function updateExcludeKeywordsList() {
+        const container = document.getElementById('exclude-keywords-list');
+        if (!container) return;
+
+        container.innerHTML = excludeKeywords.map(keyword =>
+            `<span class="exclude-keyword-tag">
+                ${keyword}
+                <button type="button" class="remove-exclude-keyword" onclick="removeExcludeKeyword('${keyword.replace(/'/g, "\\\'")}')" title="Remover">
+                    <i class="fas fa-times"></i>
+                </button>
+            </span>`
+        ).join('');
+    }
+
+    function getExcludeKeywordsString() {
+        // Pegar palavras de exclusão do array E do campo de input
+        const inputExcludeKeywords = document.getElementById('palavras_excluir').value.trim();
+        const allExcludeKeywords = [...excludeKeywords];
+
+        // Adicionar palavras do input que não estão no array
+        if (inputExcludeKeywords) {
+            const inputWords = inputExcludeKeywords.split(/\s+/).filter(word => word.trim());
+            inputWords.forEach(word => {
+                if (!allExcludeKeywords.includes(word.trim())) {
+                    allExcludeKeywords.push(word.trim());
+                }
+            });
+        }
+
+        return allExcludeKeywords.join(' ');
     }
 
     // Funções para gerenciar múltiplos municípios
@@ -214,6 +275,41 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function getNaturezasString() {
         return selectedNaturezas.join(',');
+    }
+
+    // Funções para gerenciar múltiplas situações cadastrais
+    function addSituacao() {
+        const select = document.getElementById('situacao_cadastral');
+        const situacao = select.value.trim();
+
+        if (situacao && !selectedSituacoes.includes(situacao)) {
+            selectedSituacoes.push(situacao);
+            select.value = '';
+            updateSituacoesList();
+        }
+    }
+
+    function removeSituacao(situacao) {
+        selectedSituacoes = selectedSituacoes.filter(s => s !== situacao);
+        updateSituacoesList();
+    }
+
+    function updateSituacoesList() {
+        const container = document.getElementById('situacoes-list');
+        if (!container) return;
+
+        container.innerHTML = selectedSituacoes.map(situacao =>
+            `<span class="situacao-tag">
+                ${situacao}
+                <button type="button" class="remove-situacao" onclick="removeSituacao('${situacao.replace(/'/g, "\\\'")}')" title="Remover">
+                    <i class="fas fa-times"></i>
+                </button>
+            </span>`
+        ).join('');
+    }
+
+    function getSituacoesString() {
+        return selectedSituacoes.join(',');
     }
 
     function filterMunicipios(query) {
@@ -382,6 +478,8 @@ document.addEventListener('DOMContentLoaded', function() {
             municipio: getMunicipiosString(),
             natureza_juridica: getNaturezasString(),
             palavras_chave: getKeywordsString(),
+            palavras_excluir: getExcludeKeywordsString(),
+            situacao_cadastral: getSituacoesString(),
             naturezas_ver: Array.from(document.getElementById('naturezas_ver').selectedOptions).map(option => option.value)
         };
     }
@@ -652,6 +750,32 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Event listeners para palavras-chave de exclusão
+    document.getElementById('btn-add-exclude-keyword').addEventListener('click', function() {
+        addExcludeKeyword();
+    });
+
+    // Permitir adicionar palavra de exclusão com Enter
+    document.getElementById('palavras_excluir').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addExcludeKeyword();
+        }
+    });
+
+    // Event listeners para situações cadastrais múltiplas
+    document.getElementById('btn-add-situacao').addEventListener('click', function() {
+        addSituacao();
+    });
+
+    // Permitir adicionar situação com Enter
+    document.getElementById('situacao_cadastral').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addSituacao();
+        }
+    });
+
     // Event listeners para municípios múltiplos
     document.getElementById('btn-add-municipio').addEventListener('click', function() {
         addMunicipio();
@@ -738,6 +862,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Tornar funções globais para uso em onclick
     window.removeKeyword = removeKeyword;
+    window.removeExcludeKeyword = removeExcludeKeyword;
     window.removeMunicipio = removeMunicipio;
     window.removeNatureza = removeNatureza;
+    window.removeSituacao = removeSituacao;
 });

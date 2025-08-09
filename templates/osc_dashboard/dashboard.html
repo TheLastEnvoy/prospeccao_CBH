@@ -127,9 +127,33 @@
                                 </small>
                             </div>
                         </div>
+
+                        <div class="col-lg-3 col-md-6">
+                            <label for="situacao_cadastral" class="form-label fw-semibold">
+                                <i class="fas fa-info-circle me-1"></i>Situação Cadastral
+                            </label>
+                            <div class="situacoes-container">
+                                <div class="input-group">
+                                    <select class="form-select" id="situacao_cadastral">
+                                        <option value="">Selecione uma situação...</option>
+                                        {% for situacao in situacoes_cadastrais %}
+                                        <option value="{{ situacao }}">{{ situacao }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button class="btn btn-outline-info" type="button" id="btn-add-situacao" title="Adicionar situação cadastral">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                <div id="situacoes-list" class="situacoes-list mt-2"></div>
+                                <small class="form-text text-muted">
+                                    💡 <strong>Selecione e clique +</strong> para adicionar múltiplas situações<br>
+                                    Busca OSCs com <strong>qualquer uma</strong> das situações selecionadas
+                                </small>
+                            </div>
+                        </div>
                         <div class="col-lg-3 col-md-6">
                             <label for="palavras_chave" class="form-label fw-semibold">
-                                <i class="fas fa-search me-1"></i>Palavras-chave
+                                <i class="fas fa-search me-1"></i>Palavras-chave (Incluir)
                             </label>
                             <div class="keywords-container">
                                 <div class="input-group">
@@ -143,6 +167,26 @@
                                 <small class="form-text text-muted">
                                     💡 <strong>Digite uma palavra e pressione Enter</strong> para adicionar à busca<br>
                                     Busca OSCs que contenham <strong>qualquer uma</strong> das palavras no nome
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-md-6">
+                            <label for="palavras_excluir" class="form-label fw-semibold">
+                                <i class="fas fa-ban me-1"></i>Palavras-chave (Excluir)
+                            </label>
+                            <div class="exclude-keywords-container">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="palavras_excluir"
+                                           placeholder="Digite e pressione Enter ou clique +">
+                                    <button class="btn btn-outline-danger" type="button" id="btn-add-exclude-keyword" title="Adicionar palavra para excluir">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                <div id="exclude-keywords-list" class="exclude-keywords-list mt-2"></div>
+                                <small class="form-text text-muted">
+                                    💡 <strong>Digite uma palavra e pressione Enter</strong> para excluir da busca<br>
+                                    Remove OSCs que contenham <strong>qualquer uma</strong> dessas palavras no nome
                                 </small>
                             </div>
                         </div>
