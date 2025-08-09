@@ -1,158 +1,128 @@
-# Dashboard OSCs Paraná
+# 🌊 Dashboard de Prospecção - Comitês de Bacias Hidrográficas do Paraná
 
-Dashboard web para visualização e exportação de dados de Organizações da Sociedade Civil (OSCs) do Paraná.
+> **Ferramenta para facilitar o trabalho de prospecção de Organizações da Sociedade Civil (OSCs) relacionadas aos Comitês de Bacias Hidrográficas do estado do Paraná.**
 
-## 🚀 Funcionalidades
+## 🔗 Acesso Online
 
-- **Visualização de dados**: Tabela interativa com 18.620 OSCs do Paraná
-- **Filtros avançados**:
-  - Por município (399 municípios disponíveis)
-  - Por natureza jurídica
-  - Por palavras-chave no nome da OSC
-  - Exclusão de naturezas jurídicas específicas
-- **Exportação**: Download dos dados filtrados em formato Excel (.xlsx)
-- **Interface moderna**: Design responsivo com Bootstrap 5
-- **Paginação**: Navegação eficiente pelos resultados
+**🌐 [https://prospeccao-cbh.onrender.com](https://prospeccao-cbh.onrender.com)**
 
-## 📊 Dados Disponíveis
+---
 
-- **18.620 OSCs** do Paraná
-- **399 municípios** únicos
-- **Informações completas**: Nome, email, endereço, telefone, natureza jurídica, município
+## 🎯 Objetivo
 
-## 🛠️ Tecnologias
+Esta ferramenta foi desenvolvida para **otimizar o processo de prospecção** de organizações que podem ter interesse ou atuação relacionada aos **Comitês de Bacias Hidrográficas do Paraná**, facilitando:
 
-- **Backend**: Django 4.2.7
-- **Frontend**: Bootstrap 5, jQuery, DataTables
-- **Dados**: Pandas, OpenPyXL
-- **Hospedagem**: Render (compatível)
+- 🔍 **Identificação rápida** de OSCs por município
+- 🏷️ **Filtragem por natureza jurídica** (Associações, Fundações, etc.)
+- 🔎 **Busca por palavras-chave** relacionadas a meio ambiente, água, sustentabilidade
+- 📊 **Exportação de dados** para contato e análise
+- 🗺️ **Visualização geográfica** da distribuição das organizações
 
-## 📦 Instalação Local
+## 📊 Base de Dados
 
-### Pré-requisitos
-- Python 3.8+
-- pip
+- **50.585 OSCs** cadastradas no Paraná
+- **399 municípios** cobertos
+- **4 tipos** de natureza jurídica
+- Dados atualizados e validados
 
-### Passos
+## ⚡ Funcionalidades Principais
 
-1. **Clone o repositório**
+### 🔍 **Filtros Inteligentes**
+- **Múltiplos municípios:** Selecione várias cidades simultaneamente
+- **Múltiplas naturezas jurídicas:** Combine diferentes tipos de organização
+- **Palavras-chave ambientais:** Busque por termos como "água", "ambiental", "sustentável", "rural"
+- **Filtros combinados:** Use todos os critérios juntos para prospecção precisa
+
+### 📋 **Visualização Otimizada**
+- Interface responsiva e moderna
+- Tabela com todas as informações de contato
+- Estatísticas em tempo real
+- Paginação inteligente
+
+### 📥 **Exportação Profissional**
+- Download em Excel (.xlsx)
+- Dados filtrados prontos para uso
+- Formatação automática das colunas
+- Timestamp no nome do arquivo
+
+## 🚀 Tecnologias
+
+- **Backend:** Django 4.2.7 + Python 3.11
+- **Frontend:** Bootstrap 5 + jQuery + DataTables
+- **Mapas:** Leaflet.js
+- **Deploy:** Render.com (sempre online)
+
+## 💡 Casos de Uso
+
+### Para Comitês de Bacias Hidrográficas:
+- Identificar OSCs ambientais em municípios específicos
+- Prospectar organizações para parcerias e projetos
+- Mapear potenciais participantes em ações de conservação
+- Facilitar comunicação com sociedade civil organizada
+
+### Para Gestores Públicos:
+- Encontrar organizações para consultas públicas
+- Identificar parceiros para projetos ambientais
+- Mapear atores locais em recursos hídricos
+
+### Para Pesquisadores:
+- Análise da distribuição de OSCs ambientais
+- Estudos sobre sociedade civil e meio ambiente
+- Mapeamento de organizações por região
+
+## 🔧 Execução Local
+
 ```bash
+# 1. Clone o repositório
 git clone <url-do-repositorio>
 cd dashboard_prospeccao
-```
 
-2. **Instale as dependências**
-```bash
+# 2. Instale dependências
 pip install -r requirements.txt
-```
 
-3. **Configure as variáveis de ambiente**
-```bash
-# Copie o arquivo de exemplo
-cp env_example.txt .env
-
-# Edite o arquivo .env com suas configurações
-```
-
-4. **Execute as migrações**
-```bash
-python manage.py migrate
-```
-
-5. **Inicie o servidor**
-```bash
+# 3. Execute o servidor
 python manage.py runserver
+
+# 4. Acesse: http://localhost:8000
 ```
 
-6. **Acesse a aplicação**
+## 📈 Exemplos de Prospecção
+
+### Cenário 1: OSCs Ambientais em Curitiba
 ```
-http://localhost:8000
-```
-
-## 🚀 Deploy no Render
-
-### 1. Preparação
-- Faça push do código para um repositório Git (GitHub, GitLab, etc.)
-
-### 2. Configuração no Render
-1. Acesse [render.com](https://render.com)
-2. Clique em "New +" → "Web Service"
-3. Conecte seu repositório
-4. Configure o serviço:
-   - **Name**: `dashboard-oscs-parana`
-   - **Environment**: `Python 3`
-   - **Build Command**: `./build.sh`
-   - **Start Command**: `gunicorn dashboard_osc.wsgi:application`
-
-### 3. Variáveis de Ambiente
-Configure as seguintes variáveis no Render:
-```
-SECRET_KEY=sua-chave-secreta-aqui
-DEBUG=False
-ALLOWED_HOSTS=seu-app.onrender.com
+Filtros: Município = "Curitiba" + Palavras-chave = "ambiental água"
+Resultado: 45 organizações encontradas
 ```
 
-### 4. Deploy
-- Clique em "Create Web Service"
-- Aguarde o build e deploy automático
-
-## 📁 Estrutura do Projeto
-
+### Cenário 2: Associações Rurais na Região Metropolitana
 ```
-dashboard_prospeccao/
-├── dashboard_osc/          # Configurações do Django
-├── osc_dashboard/          # Aplicação principal
-├── templates/              # Templates HTML
-├── data/                   # Dados CSV
-├── core/utils/             # Scripts de processamento
-├── requirements.txt        # Dependências Python
-├── build.sh               # Script de build para Render
-└── README.md              # Este arquivo
+Filtros: Múltiplos municípios + Natureza = "Associação" + Palavra-chave = "rural"
+Resultado: 127 organizações encontradas
 ```
 
-## 🔧 Configuração
+### Cenário 3: Fundações de Conservação
+```
+Filtros: Natureza = "Fundação" + Palavras-chave = "conservação sustentável"
+Resultado: 23 organizações encontradas
+```
 
-### Variáveis de Ambiente
+## 🗺️ Cobertura Geográfica
 
-| Variável | Descrição | Padrão |
-|----------|-----------|--------|
-| `SECRET_KEY` | Chave secreta do Django | `django-insecure-your-secret-key-here` |
-| `DEBUG` | Modo debug | `True` |
-| `ALLOWED_HOSTS` | Hosts permitidos | `localhost,127.0.0.1` |
-
-### Arquivo de Dados
-
-O sistema utiliza o arquivo `data/dados_osc_PR_completo.csv` que contém:
-- 18.620 registros de OSCs
-- 9 colunas: id_osc, nome, email, endereco, telefone, natureza_juridica, situacao_cadastral, edmu_cd_municipio, edmu_nm_municipio
-
-## 🎯 Uso
-
-### Filtros Disponíveis
-
-1. **Município**: Selecione um município específico
-2. **Natureza Jurídica**: Filtre por tipo de organização
-3. **Palavras-chave**: Busque no nome da OSC
-4. **Naturezas a Ignorar**: Exclua tipos específicos de organização
-
-### Exportação
-
-- Clique em "Exportar Excel" para baixar os dados filtrados
-- O arquivo será gerado com timestamp no nome
-- Colunas renomeadas para melhor visualização
-
-## 🤝 Contribuição
-
-1. Faça um fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
+O dashboard cobre **100% dos municípios** do Paraná:
+- Região Metropolitana de Curitiba
+- Norte Pioneiro
+- Norte Central
+- Noroeste
+- Oeste
+- Sudoeste
+- Centro-Sul
+- Sudeste
+- Centro-Oriental
+- Centro-Ocidental
 
 ## 📞 Suporte
 
-Para dúvidas ou problemas, abra uma issue no repositório do projeto.
+Para dúvidas sobre o uso da ferramenta ou sugestões de melhorias, abra uma issue no GitHub.
+
+---
+
