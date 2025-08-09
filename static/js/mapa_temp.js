@@ -153,12 +153,65 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Função para normalizar nomes de municípios
+    // Função para normalizar texto removendo acentos e padronizando
+    function normalizarTexto(texto) {
+        if (!texto) return '';
+
+        return texto
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+            .replace(/[^a-z0-9\s]/g, '') // Remove caracteres especiais
+            .replace(/\s+/g, ' ') // Normaliza espaços
+            .trim();
+    }
+
+    // Função para calcular similaridade entre dois textos
+    function calcularSimilaridade(texto1, texto2) {
+        const norm1 = normalizarTexto(texto1);
+        const norm2 = normalizarTexto(texto2);
+
+        // Igualdade exata após normalização
+        if (norm1 === norm2) return 1.0;
+
+        // Verificar se um contém o outro
+        if (norm1.includes(norm2) || norm2.includes(norm1)) return 0.8;
+
+        // Verificar palavras em comum
+        const palavras1 = norm1.split(' ').filter(p => p.length > 2);
+        const palavras2 = norm2.split(' ').filter(p => p.length > 2);
+
+        if (palavras1.length === 0 || palavras2.length === 0) return 0;
+
+        const palavrasComuns = palavras1.filter(p => palavras2.includes(p));
+        const similaridade = palavrasComuns.length / Math.max(palavras1.length, palavras2.length);
+
+        return similaridade;
+    }
+
+    // Função para encontrar melhor correspondência de município
+    function encontrarMelhorCorrespondencia(nomeBusca, listaDisponivel) {
+        let melhorMatch = null;
+        let melhorScore = 0;
+
+        for (const nomeDisponivel of listaDisponivel) {
+            const score = calcularSimilaridade(nomeBusca, nomeDisponivel);
+
+            if (score > melhorScore && score >= 0.6) { // Threshold mínimo de 60%
+                melhorScore = score;
+                melhorMatch = nomeDisponivel;
+            }
+        }
+
+        return melhorMatch;
+    }
+
+    // Função para normalizar nomes de municípios (versão melhorada)
     function normalizarNomeMunicipio(nome) {
         if (!nome) return '';
 
-        // Mapeamento de nomes conhecidos que podem estar diferentes
-        const mapeamento = {
+        // Mapeamento específico de nomes conhecidos (corrigindo erros do IPEA)
+        const mapeamentoEspecifico = {
             'CURITIBA': 'Curitiba',
             'LONDRINA': 'Londrina',
             'MARINGA': 'Maringá',
@@ -166,11 +219,26 @@ document.addEventListener('DOMContentLoaded', function() {
             'FOZ DO IGUACU': 'Foz do Iguaçu',
             'FOZ DO IGUAÇU': 'Foz do Iguaçu',
             'SAO JOSE DOS PINHAIS': 'São José dos Pinhais',
-            'SÃO JOSÉ DOS PINHAIS': 'São José dos Pinhais'
+            'SÃO JOSÉ DOS PINHAIS': 'São José dos Pinhais',
+            // Correções específicas para nomes incorretos do IPEA:
+            'CORONEL DOMINGOS SOARES': 'CORONEL DOMINGO SOARES', // IPEA -> GeoJSON correto
+            'Coronel Domingos Soares': 'Coronel Domingo Soares',
+            'coronel domingos soares': 'coronel domingo soares',
+            'DIAMANTE D\'OESTE': 'DIAMANTE DO OESTE', // IPEA -> GeoJSON correto
+            "Diamante D'Oeste": 'Diamante do Oeste',
+            'diamante d\'oeste': 'diamante do oeste'
         };
 
         const nomeUpper = nome.toUpperCase();
-        return mapeamento[nomeUpper] || nome;
+        if (mapeamentoEspecifico[nomeUpper]) {
+            return mapeamentoEspecifico[nomeUpper];
+        }
+
+        // Se não encontrou mapeamento específico, usar busca por similaridade
+        const municipiosDisponiveis = Object.keys(oscsData);
+        const melhorMatch = encontrarMelhorCorrespondencia(nome, municipiosDisponiveis);
+
+        return melhorMatch || nome;
     }
 
     // Carrega dados de OSCs por município
@@ -182,27 +250,73 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('Dados de OSCs recebidos:', data);
 
                 // Converte array para objeto para busca rápida
-                // Cria múltiplas entradas para facilitar a busca
+                // Cria múltiplas entradas para facilitar a busca com estratégia de aproximação
                 data.data.forEach(item => {
                     const municipio = item.municipio;
                     const count = item.total_oscs;
 
-                    // Armazena com o nome original
-                    oscsData[municipio] = count;
-
-                    // Armazena com nome normalizado
-                    const normalizado = normalizarNomeMunicipio(municipio);
-                    if (normalizado !== municipio) {
-                        oscsData[normalizado] = count;
+                    // Função para armazenar variação se não existir
+                    function armazenarVariacao(variacao) {
+                        if (variacao && !oscsData[variacao]) {
+                            oscsData[variacao] = count;
+                        }
                     }
 
-                    // Armazena com nome em maiúsculo
-                    oscsData[municipio.toUpperCase()] = count;
+                    // 1. Nome original
+                    armazenarVariacao(municipio);
 
-                    // Armazena sem acentos
+                    // 2. Variações de capitalização
+                    armazenarVariacao(municipio.toUpperCase());
+                    armazenarVariacao(municipio.toLowerCase());
+                    armazenarVariacao(municipio.charAt(0).toUpperCase() + municipio.slice(1).toLowerCase());
+
+                    // 3. Variações sem acentos
                     const semAcentos = municipio.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-                    oscsData[semAcentos] = count;
-                    oscsData[semAcentos.toUpperCase()] = count;
+                    armazenarVariacao(semAcentos);
+                    armazenarVariacao(semAcentos.toUpperCase());
+                    armazenarVariacao(semAcentos.toLowerCase());
+
+                    // 4. Variações com normalização completa
+                    const normalizado = normalizarTexto(municipio);
+                    armazenarVariacao(normalizado);
+
+                    // 5. Mapeamentos específicos para corrigir nomes incorretos do IPEA
+                    const mapeamentosEspecificos = {
+                        // Coronel Domingos Soares (IPEA) -> Coronel Domingo Soares (GeoJSON correto)
+                        'Coronel Domingos Soares': [
+                            'CORONEL DOMINGO SOARES',
+                            'Coronel Domingo Soares',
+                            'coronel domingo soares'
+                        ],
+                        // Diamante D'Oeste (IPEA) -> Diamante do Oeste (GeoJSON correto)
+                        "Diamante D'Oeste": [
+                            'DIAMANTE DO OESTE',
+                            'Diamante do Oeste',
+                            'diamante do oeste'
+                        ],
+                        'Foz do Iguaçu': [
+                            'FOZ DO IGUACU',
+                            'Foz do Iguacu',
+                            'FOZ DO IGUAÇU'
+                        ],
+                        'São José dos Pinhais': [
+                            'SAO JOSE DOS PINHAIS',
+                            'Sao Jose dos Pinhais',
+                            'SÃO JOSÉ DOS PINHAIS'
+                        ]
+                    };
+
+                    // Aplicar mapeamentos específicos
+                    if (mapeamentosEspecificos[municipio]) {
+                        mapeamentosEspecificos[municipio].forEach(armazenarVariacao);
+                    }
+
+                    // 6. Variações invertidas (buscar se este município é variação de outro)
+                    Object.keys(mapeamentosEspecificos).forEach(chave => {
+                        if (mapeamentosEspecificos[chave].includes(municipio)) {
+                            armazenarVariacao(chave);
+                        }
+                    });
                 });
 
                 console.log('OSCs Data processado:', oscsData);
@@ -244,36 +358,73 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    // Função para buscar OSCs por município com fallbacks
+    // Função para buscar OSCs por município com estratégia de aproximação
     function buscarOSCsPorMunicipio(municipio) {
         if (!municipio) return 0;
 
-        // Tenta buscar com o nome exato
+        // 1. Busca exata
         if (oscsData[municipio] !== undefined) {
             return oscsData[municipio];
         }
 
-        // Tenta com nome normalizado
-        const normalizado = normalizarNomeMunicipio(municipio);
-        if (oscsData[normalizado] !== undefined) {
-            return oscsData[normalizado];
+        // 2. Busca com normalização básica (maiúscula/minúscula)
+        const municipiosDisponiveis = Object.keys(oscsData);
+
+        for (const municipioDisponivel of municipiosDisponiveis) {
+            if (municipio.toLowerCase() === municipioDisponivel.toLowerCase()) {
+                return oscsData[municipioDisponivel];
+            }
         }
 
-        // Tenta com maiúsculo
-        if (oscsData[municipio.toUpperCase()] !== undefined) {
-            return oscsData[municipio.toUpperCase()];
+        // 3. Busca com normalização de acentos e caracteres especiais
+        const municipioNormalizado = normalizarTexto(municipio);
+
+        for (const municipioDisponivel of municipiosDisponiveis) {
+            if (municipioNormalizado === normalizarTexto(municipioDisponivel)) {
+                return oscsData[municipioDisponivel];
+            }
         }
 
-        // Tenta sem acentos
-        const semAcentos = municipio.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        if (oscsData[semAcentos] !== undefined) {
-            return oscsData[semAcentos];
+        // 4. Busca por similaridade (palavras em comum)
+        let melhorMatch = null;
+        let melhorScore = 0;
+
+        for (const municipioDisponivel of municipiosDisponiveis) {
+            const score = calcularSimilaridade(municipio, municipioDisponivel);
+
+            if (score > melhorScore && score >= 0.6) { // Threshold de 60% para correspondência (mais tolerante)
+                melhorScore = score;
+                melhorMatch = municipioDisponivel;
+            }
         }
 
-        // Tenta sem acentos em maiúsculo
-        if (oscsData[semAcentos.toUpperCase()] !== undefined) {
-            return oscsData[semAcentos.toUpperCase()];
+        if (melhorMatch) {
+            console.log(`✅ Correspondência encontrada: "${municipio}" -> "${melhorMatch}" (score: ${melhorScore.toFixed(2)})`);
+            return oscsData[melhorMatch];
         }
+
+        // 5. Busca por contenção (uma string contém a outra)
+        for (const municipioDisponivel of municipiosDisponiveis) {
+            const norm1 = normalizarTexto(municipio);
+            const norm2 = normalizarTexto(municipioDisponivel);
+
+            if ((norm1.length > 5 && norm2.includes(norm1)) ||
+                (norm2.length > 5 && norm1.includes(norm2))) {
+                console.log(`✅ Correspondência por contenção: "${municipio}" -> "${municipioDisponivel}"`);
+                return oscsData[municipioDisponivel];
+            }
+        }
+
+        // Log para debug de municípios não encontrados
+        console.warn(`❌ Município não encontrado: "${municipio}"`);
+        console.warn(`   Municípios disponíveis similares:`,
+            municipiosDisponiveis
+                .map(m => ({ nome: m, score: calcularSimilaridade(municipio, m) }))
+                .filter(m => m.score > 0.3)
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 5)
+                .map(m => `${m.nome} (${m.score.toFixed(2)})`)
+        );
 
         return 0;
     }
