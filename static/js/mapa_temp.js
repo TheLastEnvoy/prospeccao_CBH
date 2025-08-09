@@ -232,10 +232,10 @@ document.addEventListener('DOMContentLoaded', function() {
             'FOZ DO IGUAÇU': 'Foz do Iguaçu',
             'SAO JOSE DOS PINHAIS': 'São José dos Pinhais',
             'SÃO JOSÉ DOS PINHAIS': 'São José dos Pinhais',
-            // Correções específicas para nomes incorretos do IPEA:
-            'CORONEL DOMINGOS SOARES': 'CORONEL DOMINGO SOARES', // IPEA -> GeoJSON correto
-            'Coronel Domingos Soares': 'Coronel Domingo Soares',
-            'coronel domingos soares': 'coronel domingo soares',
+            // Correções específicas - GeoJSON -> Banco correto:
+            'CORONEL DOMINGO SOARES': 'CORONEL DOMINGOS SOARES', // GeoJSON -> Banco correto (com "s")
+            'Coronel Domingo Soares': 'Coronel Domingos Soares',
+            'coronel domingo soares': 'coronel domingos soares',
             'DIAMANTE D\'OESTE': 'DIAMANTE DO OESTE', // IPEA -> GeoJSON correto
             "Diamante D'Oeste": 'Diamante do Oeste',
             'diamante d\'oeste': 'diamante do oeste'
@@ -292,11 +292,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     const normalizado = normalizarTexto(municipio);
                     armazenarVariacao(normalizado);
 
-                    // 5. Mapeamentos específicos para corrigir nomes incorretos do IPEA
+                    // 5. Mapeamentos específicos para corresponder GeoJSON -> Banco
                     const mapeamentosEspecificos = {
-                        // Coronel Domingos Soares (IPEA) -> Coronel Domingo Soares (GeoJSON correto)
+                        // Coronel Domingos Soares (Banco correto) -> variações do GeoJSON
                         'Coronel Domingos Soares': [
-                            'CORONEL DOMINGO SOARES',
+                            'CORONEL DOMINGO SOARES',  // Nome no GeoJSON (sem "s")
                             'Coronel Domingo Soares',
                             'coronel domingo soares'
                         ],
