@@ -22,6 +22,18 @@ RENDER_EXTERNAL_HOSTNAME = config('RENDER_EXTERNAL_HOSTNAME', default='')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
+# Adicionar domínios Render automaticamente
+import os
+if 'RENDER' in os.environ:
+    # Adicionar domínios comuns do Render
+    ALLOWED_HOSTS.extend([
+        'prospeccao-cbh.onrender.com',
+        '*.onrender.com',
+    ])
+    # Permitir qualquer subdomínio .onrender.com em produção
+    if not DEBUG:
+        ALLOWED_HOSTS.append('*')
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -101,6 +113,12 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 
+# Static files finders
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+]
+
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -110,6 +128,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # WhiteNoise configuration for static files
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# WhiteNoise settings for better performance
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = True if DEBUG else False
 
 # Security settings for production
 if not DEBUG:

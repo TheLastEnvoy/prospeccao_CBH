@@ -17,7 +17,9 @@ fi
 
 # Coletar arquivos estáticos
 echo "📁 Coletando arquivos estáticos..."
-python manage.py collectstatic --no-input
+echo "   Diretório static source: $(ls -la static/ | wc -l) arquivos"
+python manage.py collectstatic --no-input --verbosity=2
+echo "   Diretório staticfiles: $(ls -la staticfiles/ | wc -l) arquivos coletados"
 
 # Executar migrações (se necessário)
 echo "🔄 Executando migrações..."
