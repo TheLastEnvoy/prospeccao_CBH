@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: dashboard-oscs-parana
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn dashboard_osc.wsgi:application"
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.4
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: false
+      - key: ALLOWED_HOSTS
+        value: "*"
+      - key: WEB_CONCURRENCY
+        value: 4
