@@ -726,3 +726,57 @@
         min-width: 150px;
     }
 }
+
+/* ========================================
+   ESTILOS PARA TABELA MODERNA (substitui DataTables)
+   ======================================== */
+
+/* Cabeçalhos ordenáveis */
+.sortable-header {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    transition: background-color 0.2s ease;
+}
+
+.sortable-header:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Ícones de ordenação */
+.sort-icon {
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+    font-size: 0.8em;
+}
+
+.sortable-header:hover .sort-icon {
+    opacity: 1;
+}
+
+.sortable-header .fa-sort-up,
+.sortable-header .fa-sort-down {
+    opacity: 1;
+    color: #ffc107;
+}
+
+/* Melhorias na tabela */
+.table tbody tr {
+    transition: background-color 0.3s ease;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(52, 152, 219, 0.1);
+}
+
+/* Responsividade melhorada */
+@media (max-width: 768px) {
+    .sortable-header {
+        font-size: 0.9em;
+        padding: 0.5rem 0.25rem;
+    }
+
+    .sort-icon {
+        font-size: 0.7em;
+    }
+}

@@ -14,6 +14,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedSituacoes = []; // Array para armazenar múltiplas situações cadastrais
     let allMunicipios = []; // Lista de todos os municípios disponíveis
 
+    // Instância da tabela moderna
+    let oscTable = null;
+
     // Utilitários
     function showToast(type, message) {
         const toastElement = document.getElementById(`toast-${type}`);
@@ -548,67 +551,20 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     function updateTable(data) {
-        const tbody = document.getElementById('tabela-body');
-        tbody.innerHTML = '';
-
-        if (data.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="8" class="text-center text-muted py-5">
-                        <i class="fas fa-search fa-2x mb-3 d-block"></i>
-                        <h6>Nenhum resultado encontrado</h6>
-                        <p class="mb-0">Tente ajustar os filtros de pesquisa</p>
-                    </td>
-                </tr>
-            `;
-            return;
+        // Usar a nova implementação de tabela moderna
+        if (oscTable) {
+            oscTable.filterData(data);
+        } else {
+            console.warn('OSCTable não foi inicializada');
         }
-
-        data.forEach(function(osc, index) {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td><span class="badge bg-primary">${osc.id_osc || '-'}</span></td>
-                <td class="fw-semibold">${osc.nome || '-'}</td>
-                <td>
-                    ${osc.email ? `<a href="mailto:${osc.email}" class="text-decoration-none">${osc.email}</a>` : '-'}
-                </td>
-                <td>${osc.endereco || '-'}</td>
-                <td>
-                    ${osc.telefone ? `<a href="tel:${osc.telefone}" class="text-decoration-none">${osc.telefone}</a>` : '-'}
-                </td>
-                <td><span class="badge bg-secondary">${osc.natureza_juridica || '-'}</span></td>
-                <td>
-                    <span class="badge ${osc.situacao_cadastral === 'ATIVA' ? 'bg-success' : 'bg-warning'}">
-                        ${osc.situacao_cadastral || '-'}
-                    </span>
-                </td>
-                <td><i class="fas fa-map-marker-alt me-1"></i>${osc.edmu_nm_municipio || '-'}</td>
-            `;
-            tbody.appendChild(row);
-        });
     }
     function updatePaginationInfo() {
-        const start = totalRecords > 0 ? (currentPage - 1) * 50 + 1 : 0;
-        const end = Math.min(currentPage * 50, totalRecords);
-        const infoPaginacao = document.getElementById('info-paginacao');
-        const paginaAtual = document.getElementById('pagina-atual');
-        const btnAnterior = document.getElementById('btn-anterior');
-        const btnProximo = document.getElementById('btn-proximo');
-
-        if (infoPaginacao) {
-            infoPaginacao.textContent = `Mostrando ${start} a ${end} de ${totalRecords} registros`;
-        }
-
-        if (paginaAtual) {
-            paginaAtual.textContent = totalPages > 0 ? `Página ${currentPage} de ${totalPages}` : 'Página 0 de 0';
-        }
-
-        if (btnAnterior) {
-            btnAnterior.disabled = currentPage <= 1;
-        }
-
-        if (btnProximo) {
-            btnProximo.disabled = currentPage >= totalPages;
+        // A paginação agora é gerenciada pela OSCTable
+        // Esta função é mantida para compatibilidade, mas a lógica foi movida para OSCTable
+        if (oscTable) {
+            currentPage = oscTable.getCurrentPage();
+            totalPages = oscTable.getTotalPages();
+            totalRecords = oscTable.getTotalRecords();
         }
     }
 
@@ -858,6 +814,33 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         console.warn('Lista de municípios não encontrada no template');
         allMunicipios = [];
+    }
+
+    // Inicializar a nova tabela moderna
+    if (typeof OSCTable !== 'undefined') {
+        oscTable = new OSCTable('tabela-oscs', {
+            sortable: true,
+            searchable: false, // Busca é feita externamente
+            pagination: false, // Paginação é feita externamente
+            pageSize: 50
+        });
+
+        // Configurar event listeners para paginação
+        document.getElementById('btn-anterior').addEventListener('click', function() {
+            if (oscTable && oscTable.getCurrentPage() > 1) {
+                oscTable.prevPage();
+            }
+        });
+
+        document.getElementById('btn-proximo').addEventListener('click', function() {
+            if (oscTable && oscTable.getCurrentPage() < oscTable.getTotalPages()) {
+                oscTable.nextPage();
+            }
+        });
+
+        console.log('OSCTable inicializada com sucesso!');
+    } else {
+        console.warn('OSCTable não está disponível. Verifique se o arquivo osc-table.js foi carregado.');
     }
 
     // Tornar funções globais para uso em onclick
