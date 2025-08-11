@@ -126,7 +126,7 @@ def export_data(request):
             conn = get_db_connection()
             
             # Constrói query SQL
-            query = "SELECT * FROM oscs WHERE 1=1"
+            query = "SELECT id_osc, nome, email, endereco, telefone, natureza_juridica, situacao_cadastral, edmu_cd_municipio, edmu_nm_municipio FROM oscs WHERE 1=1"
             params = []
             
             if municipio:
@@ -150,21 +150,13 @@ def export_data(request):
                     query += f" AND ({' OR '.join(natureza_conditions)})"
             
             if palavras_chave:
-                # Busca por frases/palavras separadas por vírgula, ignorando acentos e case
+                # Busca por palavras separadas por espaço ou vírgula, ignorando acentos e case
                 def normalize(text):
                     return unicodedata.normalize('NFKD', str(text)).encode('ASCII', 'ignore').decode('ASCII').lower()
 
-                keywords = [kw.strip() for kw in palavras_chave.split(',') if kw.strip()]
-                if keywords:
-                    # Adiciona coluna normalizada temporária na query
-                    query = query.replace('SELECT *', 'SELECT *, LOWER(nome) as nome_lower')
-                    keyword_conditions = []
-                    for keyword in keywords:
-                        norm_kw = normalize(keyword)
-                        # Busca no nome normalizado
-                        keyword_conditions.append("nome_lower LIKE ?")
-                        params.append(f'%{norm_kw}%')
-                    query += f" AND ({' OR '.join(keyword_conditions)})"
+                # Separa por vírgula ou espaço
+                import re
+                keywords = [kw.strip() for kw in re.split(r'[ ,]+', palavras_chave) if kw.strip()]
 
             if palavras_excluir:
                 # Separa as palavras para excluir e faz busca NOT LIKE
@@ -194,14 +186,11 @@ def export_data(request):
             
             # Executa query
             df = pd.read_sql_query(query, conn, params=params)
-            # Se coluna nome_lower foi criada, filtra também no Python para ignorar acentos
-            if 'nome_lower' in df.columns:
-                def normalize(text):
-                    return unicodedata.normalize('NFKD', str(text)).encode('ASCII', 'ignore').decode('ASCII').lower()
-                keywords = [normalize(kw) for kw in palavras_chave.split(',') if kw.strip()]
-                mask = df['nome'].apply(lambda x: any(kw in normalize(x) for kw in keywords))
+            # Filtra por palavras-chave no Python, ignorando acentos e case
+            if palavras_chave:
+                keywords_norm = [normalize(kw) for kw in keywords]
+                mask = df['nome'].apply(lambda x: any(kw in normalize(x) for kw in keywords_norm))
                 df = df[mask]
-                df = df.drop(columns=['nome_lower'])
             conn.close()
 
             if df.empty:
@@ -212,10 +201,13 @@ def export_data(request):
             
             # Renomeia colunas para melhor visualização
             df_export = df.copy()
-            df_export.columns = [
-                'ID OSC', 'Nome', 'Email', 'Endereço', 'Telefone', 
-                'Natureza Jurídica', 'Situação Cadastral', 'Código Município', 'Município'
-            ]
+            if len(df_export.columns) == 9:
+                df_export.columns = [
+                    'ID OSC', 'Nome', 'Email', 'Endereço', 'Telefone', 
+                    'Natureza Jurídica', 'Situação Cadastral', 'Código Município', 'Município'
+                ]
+            else:
+                return JsonResponse({'error': f'Erro: número de colunas inesperado ({len(df_export.columns)}). Não foi possível exportar.'}, status=500)
             
             # Gera nome do arquivo
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
