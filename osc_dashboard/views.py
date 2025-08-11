@@ -1,4 +1,5 @@
 import sqlite3
+import unicodedata
 import os
 from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
@@ -149,13 +150,20 @@ def export_data(request):
                     query += f" AND ({' OR '.join(natureza_conditions)})"
             
             if palavras_chave:
-                # Separa as palavras-chave e faz busca OR (OSC deve conter QUALQUER uma das palavras)
-                keywords = [kw.strip() for kw in palavras_chave.split() if kw.strip()]
+                # Busca por frases/palavras separadas por vírgula, ignorando acentos e case
+                def normalize(text):
+                    return unicodedata.normalize('NFKD', str(text)).encode('ASCII', 'ignore').decode('ASCII').lower()
+
+                keywords = [kw.strip() for kw in palavras_chave.split(',') if kw.strip()]
                 if keywords:
+                    # Adiciona coluna normalizada temporária na query
+                    query = query.replace('SELECT *', 'SELECT *, LOWER(nome) as nome_lower')
                     keyword_conditions = []
                     for keyword in keywords:
-                        keyword_conditions.append("nome LIKE ?")
-                        params.append(f'%{keyword}%')
+                        norm_kw = normalize(keyword)
+                        # Busca no nome normalizado
+                        keyword_conditions.append("nome_lower LIKE ?")
+                        params.append(f'%{norm_kw}%')
                     query += f" AND ({' OR '.join(keyword_conditions)})"
 
             if palavras_excluir:
@@ -186,6 +194,14 @@ def export_data(request):
             
             # Executa query
             df = pd.read_sql_query(query, conn, params=params)
+            # Se coluna nome_lower foi criada, filtra também no Python para ignorar acentos
+            if 'nome_lower' in df.columns:
+                def normalize(text):
+                    return unicodedata.normalize('NFKD', str(text)).encode('ASCII', 'ignore').decode('ASCII').lower()
+                keywords = [normalize(kw) for kw in palavras_chave.split(',') if kw.strip()]
+                mask = df['nome'].apply(lambda x: any(kw in normalize(x) for kw in keywords))
+                df = df[mask]
+                df = df.drop(columns=['nome_lower'])
             conn.close()
 
             if df.empty:
