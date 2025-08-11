@@ -118,6 +118,8 @@ def export_data(request):
             natureza_juridica = data.get('natureza_juridica', '')
             palavras_chave = data.get('palavras_chave', '')
             naturezas_ver = data.get('naturezas_ver', [])  # Mudança: agora são as naturezas que quer ver
+            palavras_excluir = data.get('palavras_excluir', '')
+            situacao_cadastral = data.get('situacao_cadastral', '')
             
             # Conecta ao banco
             conn = get_db_connection()
