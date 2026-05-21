@@ -9,10 +9,42 @@ import json
 from datetime import datetime
 import pandas as pd
 
+def get_municipio_cbh_map():
+    """Retorna dict {municipio: 'CBH Nome 1 / CBH Nome 2'} para enriquecimento dos dados"""
+    cbh_map = get_cbh_data()
+    municipio_cbh = {}
+    for cbh_id, cbh in cbh_map.items():
+        for mun in cbh['municipios']:
+            if mun not in municipio_cbh:
+                municipio_cbh[mun] = cbh['nome']
+            else:
+                municipio_cbh[mun] += f" / {cbh['nome']}"
+    return municipio_cbh
+
 def get_db_connection():
     """Retorna conexão com o banco SQLite"""
     db_path = os.path.join(settings.BASE_DIR, 'data', 'oscs_parana_novo.db')
     return sqlite3.connect(db_path)
+
+def get_cbh_data():
+    """Carrega o mapeamento CBH → municípios do banco de dados preservando a ordem de inserção"""
+    cbh_map = {}  # {cbh_id: {'nome': str, 'municipios': list}}
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT c.cbh_id, c.cbh_nome, cm.municipio "
+            "FROM cbh c JOIN cbh_municipio cm ON c.cbh_id = cm.cbh_id "
+            "ORDER BY c.cbh_id, cm.rowid"
+        )
+        for cbh_id, cbh_nome, municipio in cursor.fetchall():
+            if cbh_id not in cbh_map:
+                cbh_map[cbh_id] = {'nome': cbh_nome, 'municipios': []}
+            cbh_map[cbh_id]['municipios'].append(municipio)
+        conn.close()
+    except Exception as e:
+        print(f"Erro ao carregar dados CBH do banco: {e}")
+    return cbh_map
 
 def load_osc_data():
     """Carrega os dados do banco SQLite das OSCs"""
@@ -96,13 +128,16 @@ def get_filter_options():
 def dashboard(request):
     """View principal do dashboard"""
     filter_options = get_filter_options()
+    cbh_map = get_cbh_data()
 
     context = {
-        'municipios': filter_options['municipios'],  # Lista para contagem no template
-        'municipios_json': json.dumps(filter_options['municipios']),  # JSON para JavaScript
+        'municipios': filter_options['municipios'],
+        'municipios_json': json.dumps(filter_options['municipios']),
         'naturezas_juridicas': filter_options['naturezas_juridicas'],
         'situacoes_cadastrais': filter_options['situacoes_cadastrais'],
-        'total_registros': filter_options['total_registros']
+        'total_registros': filter_options['total_registros'],
+        'cbh_list': [{'cbh_id': k, 'cbh_nome': v['nome']} for k, v in cbh_map.items()],
+        'cbh_data_json': json.dumps(cbh_map),
     }
 
     return render(request, 'osc_dashboard/dashboard.html', context)
@@ -154,9 +189,17 @@ def export_data(request):
                 def normalize(text):
                     return unicodedata.normalize('NFKD', str(text)).encode('ASCII', 'ignore').decode('ASCII').lower()
 
-                # Separa por vírgula ou espaço
                 import re
                 keywords = [kw.strip() for kw in re.split(r'[ ,]+', palavras_chave) if kw.strip()]
+                # Pré-filtra no SQL com LIKE (sem normalização de acentos) para reduzir
+                # os dados trazidos para memória; a filtragem precisa com normalização
+                # de acentos é feita depois em Python sobre o subconjunto já reduzido.
+                if keywords:
+                    keyword_conditions = []
+                    for keyword in keywords:
+                        keyword_conditions.append("nome LIKE ?")
+                        params.append(f'%{keyword}%')
+                    query += f" AND ({' OR '.join(keyword_conditions)})"
 
             if palavras_excluir:
                 # Separa as palavras para excluir e faz busca NOT LIKE
@@ -196,15 +239,19 @@ def export_data(request):
             if df.empty:
                 return JsonResponse({'error': 'Nenhum dado encontrado'}, status=404)
 
+            # Adiciona coluna CBH com base no município
+            municipio_cbh = get_municipio_cbh_map()
+            df['cbh'] = df['edmu_nm_municipio'].map(lambda m: municipio_cbh.get(str(m), '-') if m else '-')
+
             # Substitui NaN por string vazia para Excel
             df = df.fillna('')
             
             # Renomeia colunas para melhor visualização
             df_export = df.copy()
-            if len(df_export.columns) == 9:
+            if len(df_export.columns) == 10:
                 df_export.columns = [
-                    'ID OSC', 'Nome', 'Email', 'Endereço', 'Telefone', 
-                    'Natureza Jurídica', 'Situação Cadastral', 'Código Município', 'Município'
+                    'ID OSC', 'Nome', 'Email', 'Endereço', 'Telefone',
+                    'Natureza Jurídica', 'Situação Cadastral', 'Código Município', 'Município', 'Comitê de Bacia'
                 ]
             else:
                 return JsonResponse({'error': f'Erro: número de colunas inesperado ({len(df_export.columns)}). Não foi possível exportar.'}, status=500)
@@ -264,8 +311,8 @@ def filter_data(request):
             # Conecta ao banco
             conn = get_db_connection()
             
-            # Constrói query SQL para contagem total
-            count_query = "SELECT COUNT(*) FROM oscs WHERE 1=1"
+            # Constrói a cláusula WHERE separadamente para reusar em COUNT e SELECT
+            where_clause = "WHERE 1=1"
             params = []
             
             if municipio:
@@ -276,7 +323,7 @@ def filter_data(request):
                     for mun in municipios:
                         municipio_conditions.append("edmu_nm_municipio = ?")
                         params.append(mun)
-                    count_query += f" AND ({' OR '.join(municipio_conditions)})"
+                    where_clause += f" AND ({' OR '.join(municipio_conditions)})"
             
             if natureza_juridica:
                 # Separa as naturezas jurídicas e faz busca OR com igualdade exata
@@ -286,7 +333,7 @@ def filter_data(request):
                     for natureza in naturezas:
                         natureza_conditions.append("natureza_juridica = ?")
                         params.append(natureza)
-                    count_query += f" AND ({' OR '.join(natureza_conditions)})"
+                    where_clause += f" AND ({' OR '.join(natureza_conditions)})"
             
             if palavras_chave:
                 # Separa as palavras-chave e faz busca OR (OSC deve conter QUALQUER uma das palavras)
@@ -296,7 +343,7 @@ def filter_data(request):
                     for keyword in keywords:
                         keyword_conditions.append("nome LIKE ?")
                         params.append(f'%{keyword}%')
-                    count_query += f" AND ({' OR '.join(keyword_conditions)})"
+                    where_clause += f" AND ({' OR '.join(keyword_conditions)})"
 
             if palavras_excluir:
                 # Separa as palavras para excluir e faz busca NOT LIKE
@@ -306,7 +353,7 @@ def filter_data(request):
                     for keyword in exclude_keywords:
                         exclude_conditions.append("nome NOT LIKE ?")
                         params.append(f'%{keyword}%')
-                    count_query += f" AND ({' AND '.join(exclude_conditions)})"
+                    where_clause += f" AND ({' AND '.join(exclude_conditions)})"
 
             if situacao_cadastral:
                 # Separa as situações cadastrais e faz busca OR com igualdade exata
@@ -316,22 +363,21 @@ def filter_data(request):
                     for situacao in situacoes:
                         situacao_conditions.append("situacao_cadastral = ?")
                         params.append(situacao)
-                    count_query += f" AND ({' OR '.join(situacao_conditions)})"
+                    where_clause += f" AND ({' OR '.join(situacao_conditions)})"
             
             # Filtra apenas as naturezas jurídicas selecionadas
             if naturezas_ver:
                 placeholders = ','.join(['?' for _ in naturezas_ver])
-                count_query += f" AND natureza_juridica IN ({placeholders})"
+                where_clause += f" AND natureza_juridica IN ({placeholders})"
                 params.extend(naturezas_ver)
             
-            # Executa contagem
+            # Executa contagem reutilizando a mesma cláusula WHERE
             cursor = conn.cursor()
-            cursor.execute(count_query, params)
+            cursor.execute(f"SELECT COUNT(*) FROM oscs {where_clause}", params)
             total = cursor.fetchone()[0]
             
             # Constrói query para dados com paginação
-            data_query = count_query.replace("SELECT COUNT(*)", "SELECT *")
-            data_query += " LIMIT ? OFFSET ?"
+            data_query = f"SELECT * FROM oscs {where_clause} ORDER BY edmu_nm_municipio LIMIT ? OFFSET ?"
             data_params = params + [per_page, (page - 1) * per_page]
             
             # Executa query de dados
@@ -339,6 +385,7 @@ def filter_data(request):
             conn.close()
 
             # Converte para lista de dicionários e trata NaN
+            municipio_cbh = get_municipio_cbh_map()
             data_list = []
             for _, row in df.iterrows():
                 row_dict = {}
@@ -348,6 +395,9 @@ def filter_data(request):
                         row_dict[col] = None
                     else:
                         row_dict[col] = value
+                # Adiciona campo CBH com base no município
+                mun = row_dict.get('edmu_nm_municipio') or ''
+                row_dict['cbh'] = municipio_cbh.get(mun, '-')
                 data_list.append(row_dict)
             
             return JsonResponse({

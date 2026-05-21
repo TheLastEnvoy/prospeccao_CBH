@@ -11,8 +11,11 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Adiciona o tile layer do OpenStreetMap
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
+// URL correta conforme política oficial: https://operations.osmfoundation.org/policies/tiles/
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19,
+    referrerPolicy: 'no-referrer-when-downgrade'
 }).addTo(map);
 
 // Função para atualizar o tamanho do mapa

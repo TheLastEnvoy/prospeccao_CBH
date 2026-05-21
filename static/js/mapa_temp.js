@@ -20,11 +20,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Adiciona tile layer com melhor qualidade
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
-        maxZoom: 18,
+    // URL correta conforme política oficial: https://operations.osmfoundation.org/policies/tiles/
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
         tileSize: 256,
-        zoomOffset: 0
+        zoomOffset: 0,
+        referrerPolicy: 'no-referrer-when-downgrade'
     }).addTo(window.map);
 
     // Adiciona legenda ao mapa
@@ -32,16 +34,13 @@ document.addEventListener('DOMContentLoaded', function() {
     legend.onAdd = function (map) {
         const div = L.DomUtil.create('div', 'legend');
         div.innerHTML = `
-            <h6><i class="fas fa-palette me-2"></i>OSCs por Município</h6>
-            <div class="legend-item"><span style="background: #D3D3D3"></span> 0 OSCs</div>
-            <div class="legend-item"><span style="background: #FFEDA0"></span> 1-10</div>
-            <div class="legend-item"><span style="background: #FED976"></span> 11-20</div>
-            <div class="legend-item"><span style="background: #FEB24C"></span> 21-50</div>
-            <div class="legend-item"><span style="background: #FD8D3C"></span> 51-100</div>
-            <div class="legend-item"><span style="background: #FC4E2A"></span> 101-200</div>
-            <div class="legend-item"><span style="background: #E31A1C"></span> 201-500</div>
-            <div class="legend-item"><span style="background: #BD0026"></span> 501-1000</div>
-            <div class="legend-item"><span style="background: #800026"></span> 1000+</div>
+            <h6><i class="fas fa-map me-2"></i>Legenda</h6>
+            <div class="legend-item">
+                <span style="background:transparent;border:1.5px solid #555;display:inline-block;width:18px;height:12px;margin-right:6px;"></span>Limite municipal
+            </div>
+            <div class="legend-item">
+                <span style="background:#2979FF;opacity:0.35;display:inline-block;width:18px;height:12px;margin-right:6px;border:2px solid #0D47A1;"></span>CBH selecionado
+            </div>
         `;
         return div;
     };
@@ -49,6 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Variáveis globais para controle
     let municipioLayer = null;
+    let cbhLayer = null;
     let oscsData = {};
     let municipiosList = []; // Lista de todos os municípios para busca
 
@@ -106,11 +106,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         return {
             fillColor: getColor(count),
-            weight: 2,
-            opacity: 1,
-            color: 'white',
-            dashArray: '3',
-            fillOpacity: 0.7
+            weight: 1,
+            opacity: 0.8,
+            color: '#555',
+            dashArray: '',
+            fillOpacity: 0  // preenchimento transparente — só bordas visíveis
         };
     }
 
@@ -118,10 +118,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function highlightFeature(e) {
         const layer = e.target;
         layer.setStyle({
-            weight: 5,
-            color: '#666',
+            weight: 3,
+            color: '#333',
             dashArray: '',
-            fillOpacity: 0.9
+            fillOpacity: 0.15
         });
         layer.bringToFront();
     }
@@ -615,19 +615,43 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 3000);
     }
 
-    // Carrega dados de OSCs primeiro, depois o GeoJSON
+    // Carrega dados de OSCs primeiro, depois os GeoJSONs (CBH e municípios)
     carregarDadosOSCs()
         .then(() => {
-            console.log('Dados de OSCs carregados, agora carregando GeoJSON...');
-            return fetch('/static/geojson/PR_Municipios_2023_optimized.geojson');
+            console.log('Dados de OSCs carregados, agora carregando GeoJSONs...');
+            return Promise.all([
+                fetch('/static/geojson/PR_Municipios_2023_optimized.geojson')
+                    .then(r => { if (!r.ok) throw new Error('Erro ao carregar GeoJSON municípios: ' + r.status); return r.json(); }),
+                fetch('/static/geojson/PR_CBH_polygons.geojson')
+                    .then(r => { if (!r.ok) throw new Error('Erro ao carregar GeoJSON CBH: ' + r.status); return r.json(); })
+            ]);
         })
-        .then(response => {
-            if (!response.ok) throw new Error('Erro ao carregar GeoJSON: ' + response.status);
-            return response.json();
-        })
-        .then(geojsonData => {
-            console.log('GeoJSON carregado, criando layer...');
-            municipioLayer = L.geoJSON(geojsonData, {
+        .then(([municipiosData, cbhData]) => {
+            console.log('GeoJSONs carregados, criando layers...');
+
+            // --- Camada CBH (adicionada primeiro = fica abaixo) ---
+            cbhLayer = L.geoJSON(cbhData, {
+                style: function() {
+                    return {
+                        fillColor: 'transparent',
+                        fillOpacity: 0,
+                        weight: 0,
+                        color: 'transparent'
+                    };
+                },
+                onEachFeature: function(feature, layer) {
+                    const p = feature.properties;
+                    layer.bindPopup(`
+                        <div class="popup-content">
+                            <h5><i class="fas fa-water me-2"></i>${p.cbh_nome}</h5>
+                            <p><strong>Municípios:</strong> <span class="badge bg-info">${p.municipios_count}</span></p>
+                        </div>
+                    `);
+                }
+            }).addTo(window.map);
+
+            // --- Camada Municípios (adicionada depois = fica por cima) ---
+            municipioLayer = L.geoJSON(municipiosData, {
                 style: style,
                 onEachFeature: onEachFeature
             }).addTo(window.map);
@@ -674,6 +698,46 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => window.map.invalidateSize(), 200);
         }
     });
+
+    // Integração com filtro de CBH — destaca o polígono do CBH selecionado
+    function highlightCBH(cbhId) {
+        if (!cbhLayer) return;
+        cbhLayer.eachLayer(function(layer) {
+            if (cbhId && layer.feature.properties.cbh_id === cbhId) {
+                layer.setStyle({
+                    fillColor: '#2979FF',
+                    fillOpacity: 0.25,
+                    weight: 2.5,
+                    color: '#0D47A1',
+                    dashArray: ''
+                });
+                window.map.fitBounds(layer.getBounds(), { padding: [30, 30] });
+                layer.openPopup();
+            } else {
+                layer.setStyle({
+                    fillColor: 'transparent',
+                    fillOpacity: 0,
+                    weight: 0,
+                    color: 'transparent'
+                });
+            }
+        });
+    }
+
+    const cbhSelectorMap = document.getElementById('cbh_selector');
+    if (cbhSelectorMap) {
+        cbhSelectorMap.addEventListener('change', function() {
+            const cbhId = this.value || null;
+            highlightCBH(cbhId);
+        });
+    }
+
+    const btnLimparCbhMap = document.getElementById('btn-limpar-cbh');
+    if (btnLimparCbhMap) {
+        btnLimparCbhMap.addEventListener('click', function() {
+            highlightCBH(null);
+        });
+    }
 
     // Integração com filtro de município
     const municipioSelect = document.getElementById('municipio');

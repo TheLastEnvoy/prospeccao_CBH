@@ -86,6 +86,29 @@
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-lg-3 col-md-6">
+                            <label for="cbh_selector" class="form-label fw-semibold">
+                                <i class="fas fa-water me-1"></i>Comitê de Bacia (CBH)
+                            </label>
+                            <select class="form-select" id="cbh_selector">
+                                <option value="">Selecione um CBH...</option>
+                                {% for cbh in cbh_list %}
+                                <option value="{{ cbh.cbh_id }}">{{ cbh.cbh_nome }}</option>
+                                {% endfor %}
+                            </select>
+                            <div id="cbh-info" class="mt-1" style="display:none">
+                                <small class="text-info">
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    <span id="cbh-municipios-count"></span> municípios selecionados
+                                    <button type="button" class="btn btn-link btn-sm p-0 ms-2 text-danger" id="btn-limpar-cbh" title="Remover seleção de CBH">
+                                        <i class="fas fa-times"></i> limpar
+                                    </button>
+                                </small>
+                            </div>
+                            <small class="form-text text-muted">
+                                Preenche os municípios do comitê automaticamente
+                            </small>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
                             <label for="municipio" class="form-label fw-semibold">
                                 <i class="fas fa-map-marker-alt me-1"></i>Município
                             </label>
@@ -335,11 +358,14 @@
                                     <th scope="col" data-sortable="edmu_nm_municipio">
                                         <i class="fas fa-city me-1"></i>Município
                                     </th>
+                                    <th scope="col" data-sortable="cbh">
+                                        <i class="fas fa-water me-1"></i>Comitê de Bacia
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody id="tabela-body">
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted py-5">
+                                    <td colspan="9" class="text-center text-muted py-5">
                                         <i class="fas fa-search fa-2x mb-3 d-block"></i>
                                         <h6>Nenhum dado carregado</h6>
                                         <p class="mb-0">Use os filtros acima e clique em "Filtrar Dados" para carregar os resultados</p>
@@ -468,6 +494,9 @@
 
 <!-- Lista de municípios para JavaScript -->
 <script type="application/json" data-municipios>{{ municipios_json|safe }}</script>
+
+<!-- Mapeamento CBH → municípios para JavaScript -->
+<script type="application/json" data-cbh-municipios>{{ cbh_data_json|safe }}</script>
 
 <script src="{% static 'js/mapa_temp.js' %}"></script>
 <script src="{% static 'js/dashboard.js' %}"></script>

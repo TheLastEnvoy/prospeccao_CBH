@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedNaturezas = []; // Array para armazenar múltiplas naturezas jurídicas
     let selectedSituacoes = []; // Array para armazenar múltiplas situações cadastrais
     let allMunicipios = []; // Lista de todos os municípios disponíveis
+    let cbhData = {}; // Mapeamento cbh_id → {nome, municipios[]}
+    let selectedCBH = null; // CBH atualmente selecionado
 
     // Instância da tabela moderna
     let oscTable = null;
@@ -68,6 +70,41 @@ document.addEventListener('DOMContentLoaded', function() {
         updatePaginationInfo();
     }
 
+    // ── CBH ─────────────────────────────────────────────────────────────────
+
+    function selectCBH(cbh_id) {
+        const cbh = cbhData[cbh_id];
+        if (!cbh) return;
+
+        selectedCBH = cbh_id;
+
+        // Substitui todos os municípios selecionados pelos do CBH
+        selectedMunicipios = [...cbh.municipios];
+        updateMunicipiosList();
+
+        // Atualiza info visual
+        const infoEl = document.getElementById('cbh-info');
+        const countEl = document.getElementById('cbh-municipios-count');
+        if (infoEl && countEl) {
+            countEl.textContent = cbh.municipios.length;
+            infoEl.style.display = 'block';
+        }
+
+        showToast('success', `${cbh.nome}: ${cbh.municipios.length} municípios carregados.`);
+    }
+
+    function clearCBH() {
+        selectedCBH = null;
+        const selector = document.getElementById('cbh_selector');
+        if (selector) selector.value = '';
+        const infoEl = document.getElementById('cbh-info');
+        if (infoEl) infoEl.style.display = 'none';
+        selectedMunicipios = [];
+        updateMunicipiosList();
+    }
+
+    // ── Filtros ──────────────────────────────────────────────────────────────
+
     function clearAllFilters() {
         document.getElementById('municipio').value = '';
         document.getElementById('natureza_juridica').value = '';
@@ -75,6 +112,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('palavras_excluir').value = '';
         document.getElementById('situacao_cadastral').value = '';
         document.getElementById('naturezas_ver').selectedIndex = -1;
+
+        // Limpa seleção de CBH
+        clearCBH();
 
         // Limpar palavras-chave múltiplas
         keywords = [];
@@ -535,7 +575,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             updateTable(response.data);
-            updatePaginationInfo();
+            // Atualiza controles de paginação diretamente com valores do servidor
+            // (evita sobreposição pelos valores do oscTable, que só conhece a página atual de 50 itens)
+            {
+                const perPage = response.per_page || 50;
+                const startItem = totalRecords > 0 ? (currentPage - 1) * perPage + 1 : 0;
+                const endItem = Math.min(currentPage * perPage, totalRecords);
+                const infoPag = document.getElementById('info-paginacao');
+                const paginaAt = document.getElementById('pagina-atual');
+                const btnAnt = document.getElementById('btn-anterior');
+                const btnProx = document.getElementById('btn-proximo');
+                if (infoPag) infoPag.textContent = `Mostrando ${startItem} a ${endItem} de ${totalRecords} registros`;
+                if (paginaAt) paginaAt.textContent = `Página ${currentPage} de ${totalPages}`;
+                if (btnAnt) btnAnt.disabled = currentPage <= 1;
+                if (btnProx) btnProx.disabled = currentPage >= totalPages;
+            }
             updateStats(response.total);
 
             if (response.total > 0) {
@@ -814,6 +868,40 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         console.warn('Lista de municípios não encontrada no template');
         allMunicipios = [];
+    }
+
+    // Carregar mapeamento CBH → municípios do template
+    const cbhScript = document.querySelector('script[data-cbh-municipios]');
+    if (cbhScript) {
+        try {
+            cbhData = JSON.parse(cbhScript.textContent);
+            console.log('CBHs carregados:', Object.keys(cbhData).length);
+        } catch (e) {
+            console.error('Erro ao carregar dados CBH:', e);
+            cbhData = {};
+        }
+    }
+
+    // Event listener do seletor de CBH
+    const cbhSelector = document.getElementById('cbh_selector');
+    if (cbhSelector) {
+        cbhSelector.addEventListener('change', function() {
+            const cbh_id = this.value;
+            if (cbh_id) {
+                selectCBH(cbh_id);
+            } else {
+                clearCBH();
+            }
+        });
+    }
+
+    // Botão de limpar CBH
+    const btnLimparCbh = document.getElementById('btn-limpar-cbh');
+    if (btnLimparCbh) {
+        btnLimparCbh.addEventListener('click', function(e) {
+            e.preventDefault();
+            clearCBH();
+        });
     }
 
     // Inicializar a nova tabela moderna

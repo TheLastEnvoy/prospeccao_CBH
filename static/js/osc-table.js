@@ -85,6 +85,14 @@ class OSCTable extends ModernTable {
                 className: 'text-truncate',
                 style: 'max-width: 150px;',
                 title: osc.edmu_nm_municipio || ''
+            },
+            {
+                content: osc.cbh && osc.cbh !== '-'
+                    ? `<span class="badge bg-info text-dark" style="font-size:0.75em;">${escapeHtml(osc.cbh)}</span>`
+                    : '<span class="text-muted">-</span>',
+                className: 'text-truncate',
+                style: 'max-width: 160px;',
+                title: osc.cbh || ''
             }
         ];
         

@@ -9,8 +9,11 @@ document.addEventListener('DOMContentLoaded', function() {
         zoomControl: true,
         attributionControl: true,
     });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+    // URL correta conforme política oficial: https://operations.osmfoundation.org/policies/tiles/
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+        referrerPolicy: 'no-referrer-when-downgrade'
     }).addTo(window.map);
     // Ajusta tamanho do mapa ao redimensionar janela
     window.addEventListener('resize', function() {
