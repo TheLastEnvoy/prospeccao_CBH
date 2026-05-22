@@ -3,6 +3,7 @@ Extrator corrigido para dados do MapaOSC - IPEA
 Versão com seletores atualizados para telefone e situação cadastral
 """
 
+import sqlite3
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
@@ -111,7 +112,7 @@ def extrair_todas_oscs():
     # Carrega os IDs das OSCs com delimitador correto
     try:
         
-        df = pd.read_csv('data/osc_PR.CSV', encoding='latin1', sep=';', on_bad_lines='skip')
+        df = pd.read_csv('data/osc_PR_novo.CSV', sep=';', on_bad_lines='skip')
         
         # Verifica as colunas disponíveis
         print(f"📋 Colunas encontradas: {list(df.columns)}")
@@ -143,17 +144,27 @@ def extrair_todas_oscs():
         print(f"❌ Erro ao carregar arquivo: {e}")
         return
     
-    # Tenta carregar progresso anterior
+    # Carrega IDs já no banco (fonte de verdade única)
     resultados = []
     ids_processados = set()
     try:
-        df_existente = pd.read_csv('data/dados_osc_PR_fast_corrigido.csv')
-        if 'id_osc' in df_existente.columns:
-            ids_processados = set(df_existente['id_osc'].astype(int).tolist())
-            resultados = df_existente.to_dict(orient='records')
-            print(f"🔄 Retomando extração. {len(ids_processados)} OSCs já processadas.")
+        conn = sqlite3.connect('data/oscs_parana_novo.db')
+        ids_processados = set(
+            pd.read_sql('SELECT id_osc FROM oscs', conn)['id_osc'].astype(int).tolist()
+        )
+        conn.close()
+        print(f"🗄️  Banco de dados: {len(ids_processados)} OSCs já inseridas.")
     except Exception as e:
-        print(f"ℹ️ Nenhum progresso anterior encontrado. Iniciando do zero.")
+        print(f"⚠️  Não foi possível ler o banco: {e}. Verificando CSVs...")
+        # Fallback para CSVs caso o banco não esteja disponível
+        for csv in ['data/dados_osc_PR_FINAL.csv', 'data/dados_osc_PR_fast_corrigido.csv']:
+            try:
+                df_tmp = pd.read_csv(csv, on_bad_lines='skip')
+                if 'id_osc' in df_tmp.columns:
+                    ids_processados.update(df_tmp['id_osc'].dropna().astype(int).tolist())
+            except Exception:
+                pass
+        print(f"📂 Fallback CSVs: {len(ids_processados)} OSCs já processadas.")
 
     # Filtra apenas IDs ainda não processados
     ids_restantes = [id_osc for id_osc in ids if id_osc not in ids_processados]
@@ -164,7 +175,7 @@ def extrair_todas_oscs():
 
     print(f"⏱️  Iniciando processamento com ThreadPoolExecutor...")
 
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=7) as executor:
         futures = {executor.submit(extrair_dados, id_osc): id_osc for id_osc in ids_restantes}
         for i, future in enumerate(as_completed(futures)):
             resultado = future.result()
