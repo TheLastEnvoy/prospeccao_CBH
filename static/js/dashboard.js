@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let keywords = []; // Array para armazenar múltiplas palavras-chave
     let excludeKeywords = []; // Array para armazenar palavras-chave de exclusão
     let selectedMunicipios = []; // Array para armazenar múltiplos municípios
+    let isMunicipiosExpanded = false;
     let selectedNaturezas = []; // Array para armazenar múltiplas naturezas jurídicas
     let selectedSituacoes = []; // Array para armazenar múltiplas situações cadastrais
     let allMunicipios = []; // Lista de todos os municípios disponíveis
@@ -18,8 +19,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Instância da tabela moderna
     let oscTable = null;
+    const MAX_VISIBLE_MUNICIPIOS = 10;
+    const statsTotalElement = document.getElementById('stats-total');
+    const initialTotalRecords = parseInt(
+        statsTotalElement ? (statsTotalElement.dataset.total || statsTotalElement.textContent || '0') : '0',
+        10
+    ) || 0;
 
     // Utilitários
+    function escapeHtml(value) {
+        const div = document.createElement('div');
+        div.textContent = value == null ? '' : String(value);
+        return div.innerHTML;
+    }
+
     function showToast(type, message) {
         const toastElement = document.getElementById(`toast-${type}`);
         const messageElement = document.getElementById(`toast-${type}-message`);
@@ -36,8 +49,256 @@ document.addEventListener('DOMContentLoaded', function() {
         const statsFiltered = document.getElementById('stats-filtered');
         const totalOscs = document.getElementById('total-oscs');
 
+        if (statsTotal) statsTotal.textContent = initialTotalRecords;
         if (statsFiltered) statsFiltered.textContent = filtered;
-        if (totalOscs) totalOscs.textContent = filtered || totalRecords;
+        if (totalOscs) totalOscs.textContent = filtered || initialTotalRecords;
+    }
+
+    function resetPaginationControls() {
+        const infoPag = document.getElementById('info-paginacao');
+        const paginaAt = document.getElementById('pagina-atual');
+        const btnAnt = document.getElementById('btn-anterior');
+        const btnProx = document.getElementById('btn-proximo');
+
+        if (infoPag) infoPag.textContent = 'Mostrando 0 de 0 registros';
+        if (paginaAt) paginaAt.textContent = 'Página 1';
+        if (btnAnt) btnAnt.disabled = true;
+        if (btnProx) btnProx.disabled = true;
+    }
+
+    function clearTableState() {
+        if (!oscTable) return;
+
+        oscTable.data = [];
+        oscTable.filteredData = [];
+        oscTable.currentPage = 1;
+    }
+
+    function getActiveFilterSummary() {
+        const summary = [];
+        const naturezasVer = Array.from(document.getElementById('naturezas_ver').selectedOptions).map(option => option.value);
+
+        if (selectedCBH && cbhData[selectedCBH]) {
+            summary.push({
+                label: 'CBH',
+                value: cbhData[selectedCBH].nome
+            });
+        }
+
+        if (selectedMunicipios.length > 0) {
+            summary.push({
+                label: 'Municípios',
+                value: `${selectedMunicipios.length} selecionado(s)`
+            });
+        }
+
+        if (selectedNaturezas.length > 0) {
+            summary.push({
+                label: 'Naturezas',
+                value: `${selectedNaturezas.length} selecionada(s)`
+            });
+        }
+
+        if (selectedSituacoes.length > 0) {
+            summary.push({
+                label: 'Situações',
+                value: `${selectedSituacoes.length} selecionada(s)`
+            });
+        }
+
+        if (keywords.length > 0 || document.getElementById('palavras_chave').value.trim()) {
+            const count = getKeywordsString().split(/\s+/).filter(Boolean).length;
+            if (count > 0) {
+                summary.push({
+                    label: 'Incluir',
+                    value: `${count} termo(s)`
+                });
+            }
+        }
+
+        if (excludeKeywords.length > 0 || document.getElementById('palavras_excluir').value.trim()) {
+            const count = getExcludeKeywordsString().split(/\s+/).filter(Boolean).length;
+            if (count > 0) {
+                summary.push({
+                    label: 'Excluir',
+                    value: `${count} termo(s)`
+                });
+            }
+        }
+
+        if (naturezasVer.length > 0) {
+            summary.push({
+                label: 'Visualização',
+                value: `${naturezasVer.length} natureza(s)`
+            });
+        }
+
+        return summary;
+    }
+
+    function normalizeFilters(filters) {
+        return JSON.stringify({
+            municipio: filters.municipio || '',
+            natureza_juridica: filters.natureza_juridica || '',
+            palavras_chave: filters.palavras_chave || '',
+            palavras_excluir: filters.palavras_excluir || '',
+            situacao_cadastral: filters.situacao_cadastral || '',
+            naturezas_ver: Array.isArray(filters.naturezas_ver) ? [...filters.naturezas_ver].sort() : []
+        });
+    }
+
+    function havePendingFilterChanges() {
+        return normalizeFilters(getFilters()) !== normalizeFilters(currentFilters);
+    }
+
+    function updateResultsStatus() {
+        const badge = document.getElementById('results-status-badge');
+        if (!badge) return;
+
+        const activeFilters = getActiveFilterSummary().length;
+
+        if (havePendingFilterChanges()) {
+            badge.textContent = 'Filtros alterados, clique em Filtrar Dados';
+            badge.classList.remove('section-status-badge--muted');
+            return;
+        }
+
+        if (totalRecords > 0 && activeFilters === 0) {
+            badge.textContent = 'Base completa carregada';
+            badge.classList.remove('section-status-badge--muted');
+            return;
+        }
+
+        if (totalRecords > 0) {
+            badge.textContent = `${totalRecords} registro(s) disponível(is)`;
+            badge.classList.remove('section-status-badge--muted');
+            return;
+        }
+
+        if (activeFilters > 0) {
+            badge.textContent = 'Consulta montada, aguardando retorno';
+            badge.classList.remove('section-status-badge--muted');
+            return;
+        }
+
+        badge.textContent = 'Aguardando consulta';
+        badge.classList.add('section-status-badge--muted');
+    }
+
+    function updateMapVisibilityStatus(isVisible) {
+        const badge = document.getElementById('map-visibility-status');
+        if (!badge) return;
+
+        badge.textContent = isVisible ? 'Mapa visível' : 'Mapa oculto';
+    }
+
+    function updateFilterSummaryUI() {
+        const summary = getActiveFilterSummary();
+        const summaryContainer = document.getElementById('active-filter-summary');
+        const activeFilterBadge = document.getElementById('active-filter-count');
+        const heroActiveFilters = document.getElementById('hero-active-filters');
+
+        if (activeFilterBadge) {
+            activeFilterBadge.textContent = `${summary.length} filtro(s) ativo(s)`;
+        }
+
+        if (heroActiveFilters) {
+            heroActiveFilters.textContent = summary.length;
+        }
+
+        if (!summaryContainer) return;
+
+        if (summary.length === 0) {
+            summaryContainer.innerHTML = '<span class="filter-chip filter-chip--placeholder">Nenhum filtro ativo</span>';
+            const activeFiltersValue = document.getElementById('insight-active-filters');
+            const activeFiltersDetail = document.getElementById('insight-active-filters-detail');
+            if (activeFiltersValue) activeFiltersValue.textContent = '0';
+            if (activeFiltersDetail) activeFiltersDetail.textContent = 'Consulta ampla em toda a base';
+            updateResultsStatus();
+            return;
+        }
+
+        summaryContainer.innerHTML = summary.map(item =>
+            `<span class="filter-chip"><strong>${escapeHtml(item.label)}:</strong> ${escapeHtml(item.value)}</span>`
+        ).join('');
+
+        const activeFiltersValue = document.getElementById('insight-active-filters');
+        const activeFiltersDetail = document.getElementById('insight-active-filters-detail');
+        if (activeFiltersValue) activeFiltersValue.textContent = String(summary.length);
+        if (activeFiltersDetail) activeFiltersDetail.textContent = 'Consulta refinada por critérios ativos';
+
+        updateResultsStatus();
+    }
+
+    function getTopOccurrence(data, key) {
+        if (!Array.isArray(data) || data.length === 0) return null;
+
+        const counts = {};
+        data.forEach(item => {
+            const value = item[key];
+            if (!value) return;
+            counts[value] = (counts[value] || 0) + 1;
+        });
+
+        return Object.entries(counts).sort((a, b) => b[1] - a[1])[0] || null;
+    }
+
+    function updateDashboardInsights(data = []) {
+        const activeFilters = getActiveFilterSummary();
+        const resultsTotal = document.getElementById('insight-results-total');
+        const pagePreview = document.getElementById('insight-page-preview');
+        const coverageValue = document.getElementById('insight-coverage-value');
+        const coverageBar = document.getElementById('insight-coverage-bar');
+        const coverageDetail = document.getElementById('insight-coverage-detail');
+        const activeFiltersValue = document.getElementById('insight-active-filters');
+        const activeFiltersDetail = document.getElementById('insight-active-filters-detail');
+        const focusTitle = document.getElementById('insight-focus-title');
+        const focusDetail = document.getElementById('insight-focus-detail');
+        const topMunicipio = getTopOccurrence(data, 'edmu_nm_municipio');
+        const topNatureza = getTopOccurrence(data, 'natureza_juridica');
+        const coverage = initialTotalRecords > 0 ? Math.min(100, Math.round((totalRecords / initialTotalRecords) * 100)) : 0;
+
+        if (resultsTotal) resultsTotal.textContent = totalRecords;
+
+        if (pagePreview) {
+            pagePreview.textContent = data.length > 0
+                ? `${data.length} registro(s) exibido(s) na página atual`
+                : (getActiveFilterSummary().length > 0 || totalRecords > 0 ? 'Nenhum registro na página atual' : 'Aguardando a primeira consulta');
+        }
+
+        if (coverageValue) coverageValue.textContent = `${coverage}%`;
+        if (coverageBar) coverageBar.style.width = `${coverage}%`;
+        if (coverageDetail) {
+            coverageDetail.textContent = totalRecords > 0
+                ? `${totalRecords} de ${initialTotalRecords} registro(s) dentro do recorte`
+                : 'Nenhum recorte retornado no momento';
+        }
+
+        if (activeFiltersValue) activeFiltersValue.textContent = activeFilters.length;
+        if (activeFiltersDetail) {
+            activeFiltersDetail.textContent = activeFilters.length > 0
+                ? 'Consulta refinada por critérios ativos'
+                : 'Consulta ampla em toda a base';
+        }
+
+        if (focusTitle && focusDetail) {
+            if (selectedCBH && cbhData[selectedCBH]) {
+                focusTitle.textContent = cbhData[selectedCBH].nome;
+                focusDetail.textContent = `${selectedMunicipios.length} município(s) carregado(s) pelo CBH`;
+            } else if (selectedMunicipios.length > 0) {
+                focusTitle.textContent = `${selectedMunicipios.length} município(s) em foco`;
+                focusDetail.textContent = selectedMunicipios.slice(0, 2).join(' • ');
+            } else if (topMunicipio) {
+                focusTitle.textContent = topMunicipio[0];
+                focusDetail.textContent = `Maior concentração nesta página: ${topMunicipio[1]} registro(s)`;
+            } else if (topNatureza) {
+                focusTitle.textContent = topNatureza[0];
+                focusDetail.textContent = `Natureza em destaque nesta página: ${topNatureza[1]} registro(s)`;
+            } else {
+                focusTitle.textContent = 'Visão estadual';
+                focusDetail.textContent = 'Sem município ou CBH priorizado';
+            }
+        }
     }
 
     function handleEmptyMunicipioResult(municipio) {
@@ -51,7 +312,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const tbody = document.getElementById('tabela-body');
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" class="text-center text-warning py-5">
+                <td colspan="9" class="text-center text-warning py-5">
                     <i class="fas fa-exclamation-triangle fa-2x mb-3 d-block"></i>
                     <h6>Município sem OSCs cadastradas</h6>
                     <p class="mb-2">O município <strong>"${municipio}"</strong> não possui OSCs cadastradas no sistema.</p>
@@ -67,7 +328,10 @@ document.addEventListener('DOMContentLoaded', function() {
         currentPage = 1;
         totalPages = 0;
         totalRecords = 0;
-        updatePaginationInfo();
+        clearTableState();
+        resetPaginationControls();
+        updateDashboardInsights([]);
+        updateResultsStatus();
     }
 
     // ── CBH ─────────────────────────────────────────────────────────────────
@@ -80,6 +344,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Substitui todos os municípios selecionados pelos do CBH
         selectedMunicipios = [...cbh.municipios];
+        isMunicipiosExpanded = false;
         updateMunicipiosList();
 
         // Atualiza info visual
@@ -90,6 +355,8 @@ document.addEventListener('DOMContentLoaded', function() {
             infoEl.style.display = 'block';
         }
 
+        updateFilterSummaryUI();
+        updateDashboardInsights([]);
         showToast('success', `${cbh.nome}: ${cbh.municipios.length} municípios carregados.`);
     }
 
@@ -100,7 +367,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const infoEl = document.getElementById('cbh-info');
         if (infoEl) infoEl.style.display = 'none';
         selectedMunicipios = [];
+        isMunicipiosExpanded = false;
         updateMunicipiosList();
+        updateFilterSummaryUI();
+        updateDashboardInsights([]);
     }
 
     // ── Filtros ──────────────────────────────────────────────────────────────
@@ -126,6 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Limpar municípios múltiplos
         selectedMunicipios = [];
+        isMunicipiosExpanded = false;
         updateMunicipiosList();
 
         // Limpar naturezas jurídicas múltiplas
@@ -138,6 +409,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Reset current filters
         currentFilters = {};
+        updateFilterSummaryUI();
+        updateDashboardInsights([]);
     }
 
     // Funções para gerenciar múltiplas palavras-chave
@@ -171,6 +444,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </button>
             </span>`
         ).join('');
+        updateFilterSummaryUI();
     }
 
     function getKeywordsString() {
@@ -220,6 +494,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </button>
             </span>`
         ).join('');
+        updateFilterSummaryUI();
     }
 
     function getExcludeKeywordsString() {
@@ -253,6 +528,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (municipioExists) {
                 selectedMunicipios.push(municipio);
+                isMunicipiosExpanded = false;
                 input.value = '';
                 updateMunicipiosList();
                 hideMunicipioSuggestions();
@@ -264,6 +540,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function removeMunicipio(municipio) {
         selectedMunicipios = selectedMunicipios.filter(m => m !== municipio);
+        if (selectedMunicipios.length <= MAX_VISIBLE_MUNICIPIOS) {
+            isMunicipiosExpanded = false;
+        }
+        updateMunicipiosList();
+    }
+
+    function toggleMunicipiosExpansion() {
+        isMunicipiosExpanded = !isMunicipiosExpanded;
         updateMunicipiosList();
     }
 
@@ -271,14 +555,37 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('municipios-list');
         if (!container) return;
 
-        container.innerHTML = selectedMunicipios.map(municipio =>
+        const hasOverflow = selectedMunicipios.length > MAX_VISIBLE_MUNICIPIOS;
+        const visibleMunicipios = hasOverflow && !isMunicipiosExpanded
+            ? selectedMunicipios.slice(0, MAX_VISIBLE_MUNICIPIOS)
+            : selectedMunicipios;
+        const hiddenCount = selectedMunicipios.length - visibleMunicipios.length;
+
+        container.innerHTML = visibleMunicipios.map(municipio =>
             `<span class="municipio-tag">
                 ${municipio}
-                <button type="button" class="remove-municipio" onclick="removeMunicipio('${municipio}')" title="Remover">
+                <button type="button" class="remove-municipio" onclick="removeMunicipio('${municipio.replace(/'/g, "\\\'")}')" title="Remover">
                     <i class="fas fa-times"></i>
                 </button>
             </span>`
         ).join('');
+
+        if (hasOverflow && !isMunicipiosExpanded) {
+            container.innerHTML += `
+                <button type="button" class="municipio-overflow-toggle" onclick="toggleMunicipiosExpansion()" title="Mostrar mais municípios">
+                    &hellip;
+                    <span>+${hiddenCount}</span>
+                </button>
+            `;
+        } else if (hasOverflow) {
+            container.innerHTML += `
+                <button type="button" class="municipio-overflow-toggle municipio-overflow-toggle--expanded" onclick="toggleMunicipiosExpansion()" title="Mostrar menos municípios">
+                    Recolher
+                </button>
+            `;
+        }
+
+        updateFilterSummaryUI();
     }
 
     function getMunicipiosString() {
@@ -314,6 +621,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </button>
             </span>`
         ).join('');
+        updateFilterSummaryUI();
     }
 
     function getNaturezasString() {
@@ -349,6 +657,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </button>
             </span>`
         ).join('');
+        updateFilterSummaryUI();
     }
 
     function getSituacoesString() {
@@ -469,16 +778,15 @@ document.addEventListener('DOMContentLoaded', function() {
     function toggleMapSection() {
         const mapSection = document.getElementById('mapa-section');
         const toggleBtn = document.getElementById('btn-toggle-mapa');
+        const icon = document.getElementById('btn-toggle-mapa-icon');
+        const text = document.getElementById('btn-toggle-mapa-text');
 
-        if (mapSection && toggleBtn) {
+        if (mapSection && toggleBtn && icon && text) {
             // Verifica se está visível (considera tanto display: none quanto ausência de style)
             const computedStyle = window.getComputedStyle(mapSection);
             const isVisible = computedStyle.display !== 'none';
 
             mapSection.style.display = isVisible ? 'none' : 'block';
-
-            const icon = toggleBtn.querySelector('i');
-            const text = toggleBtn.childNodes[toggleBtn.childNodes.length - 1];
 
             if (isVisible) {
                 icon.className = 'fas fa-map me-2';
@@ -492,6 +800,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     setTimeout(() => window.map.invalidateSize(), 300);
                 }
             }
+
+            updateMapVisibilityStatus(!isVisible);
         }
     }
 
@@ -499,13 +809,12 @@ document.addEventListener('DOMContentLoaded', function() {
     function initializeMapToggleButton() {
         const mapSection = document.getElementById('mapa-section');
         const toggleBtn = document.getElementById('btn-toggle-mapa');
+        const icon = document.getElementById('btn-toggle-mapa-icon');
+        const text = document.getElementById('btn-toggle-mapa-text');
 
-        if (mapSection && toggleBtn) {
+        if (mapSection && toggleBtn && icon && text) {
             const computedStyle = window.getComputedStyle(mapSection);
             const isVisible = computedStyle.display !== 'none';
-
-            const icon = toggleBtn.querySelector('i');
-            const text = toggleBtn.childNodes[toggleBtn.childNodes.length - 1];
 
             if (isVisible) {
                 icon.className = 'fas fa-map-slash me-2';
@@ -514,6 +823,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 icon.className = 'fas fa-map me-2';
                 text.textContent = 'Mostrar Mapa';
             }
+
+            updateMapVisibilityStatus(isVisible);
         }
     }
     function getFilters() {
@@ -591,6 +902,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (btnProx) btnProx.disabled = currentPage >= totalPages;
             }
             updateStats(response.total);
+            updateDashboardInsights(response.data);
+            updateResultsStatus();
 
             if (response.total > 0) {
                 showToast('success', `${response.data.length} registros carregados com sucesso!`);
@@ -625,6 +938,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function exportData() {
         const exportBtn = document.getElementById('btn-exportar');
         const originalText = exportBtn.innerHTML;
+        const exportFilters = normalizeFilters(currentFilters) === normalizeFilters({})
+            ? getFilters()
+            : currentFilters;
 
         // Desabilita o botão e mostra loading
         exportBtn.disabled = true;
@@ -632,13 +948,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
+        if (havePendingFilterChanges()) {
+            showToast('info', 'Exportando conforme a última filtragem aplicada na tabela.');
+        }
+
         fetch(exportDataUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrfToken
             },
-            body: JSON.stringify(getFilters())
+            body: JSON.stringify(exportFilters)
         })
         .then(response => {
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -703,7 +1023,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const tbody = document.getElementById('tabela-body');
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" class="text-center text-muted py-5">
+                <td colspan="9" class="text-center text-muted py-5">
                     <i class="fas fa-search fa-2x mb-3 d-block"></i>
                     <h6>Nenhum dado carregado</h6>
                     <p class="mb-0">Clique em "Filtrar Dados" para carregar os resultados</p>
@@ -715,7 +1035,10 @@ document.addEventListener('DOMContentLoaded', function() {
         currentPage = 1;
         totalPages = 0;
         totalRecords = 0;
-        updatePaginationInfo();
+        clearTableState();
+        resetPaginationControls();
+        updateDashboardInsights([]);
+        updateResultsStatus();
 
         showToast('success', 'Filtros limpos com sucesso!');
     });
@@ -729,6 +1052,7 @@ document.addEventListener('DOMContentLoaded', function() {
     palavrasChaveInput.addEventListener('input', function(e) {
         // Não faz nada - apenas previne outros event listeners
         e.stopPropagation();
+        updateFilterSummaryUI();
     });
 
     palavrasChaveInput.addEventListener('keypress', function(e) {
@@ -741,6 +1065,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Prevenir eventos de change que possam disparar busca
     palavrasChaveInput.addEventListener('change', function(e) {
         e.stopPropagation();
+        updateFilterSummaryUI();
     });
 
     document.getElementById('btn-add-keyword').addEventListener('click', function() {
@@ -773,6 +1098,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    document.getElementById('palavras_excluir').addEventListener('input', function() {
+        updateFilterSummaryUI();
+    });
+
     // Event listeners para situações cadastrais múltiplas
     document.getElementById('btn-add-situacao').addEventListener('click', function() {
         addSituacao();
@@ -789,6 +1118,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listeners para municípios múltiplos
     document.getElementById('btn-add-municipio').addEventListener('click', function() {
         addMunicipio();
+    });
+
+    document.getElementById('naturezas_ver').addEventListener('change', function() {
+        updateFilterSummaryUI();
+        updateDashboardInsights([]);
     });
 
     // Inicializar busca de municípios
@@ -852,6 +1186,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Inicializa o estado do botão do mapa
     initializeMapToggleButton();
+    updateFilterSummaryUI();
+    updateDashboardInsights([]);
+    updateResultsStatus();
 
     console.log('Dashboard inicializado com sucesso!');
 
@@ -913,19 +1250,6 @@ document.addEventListener('DOMContentLoaded', function() {
             pageSize: 50
         });
 
-        // Configurar event listeners para paginação
-        document.getElementById('btn-anterior').addEventListener('click', function() {
-            if (oscTable && oscTable.getCurrentPage() > 1) {
-                oscTable.prevPage();
-            }
-        });
-
-        document.getElementById('btn-proximo').addEventListener('click', function() {
-            if (oscTable && oscTable.getCurrentPage() < oscTable.getTotalPages()) {
-                oscTable.nextPage();
-            }
-        });
-
         console.log('OSCTable inicializada com sucesso!');
     } else {
         console.warn('OSCTable não está disponível. Verifique se o arquivo osc-table.js foi carregado.');
@@ -935,6 +1259,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.removeKeyword = removeKeyword;
     window.removeExcludeKeyword = removeExcludeKeyword;
     window.removeMunicipio = removeMunicipio;
+    window.toggleMunicipiosExpansion = toggleMunicipiosExpansion;
     window.removeNatureza = removeNatureza;
     window.removeSituacao = removeSituacao;
 });

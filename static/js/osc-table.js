@@ -25,6 +25,7 @@ class OSCTable extends ModernTable {
     
     createRow(osc) {
         const tr = document.createElement('tr');
+        tr.className = 'osc-row';
         
         // Função para escapar HTML
         const escapeHtml = (text) => {
@@ -33,65 +34,97 @@ class OSCTable extends ModernTable {
             div.textContent = text;
             return div.innerHTML;
         };
+
+        const formatValue = (value, fallback = '-') => value ? escapeHtml(value) : fallback;
+        const situacaoAtiva = osc.situacao_cadastral === 'ATIVA';
         
         // Criar células com conteúdo específico para OSCs
         const cells = [
             {
-                content: `<span class="badge bg-primary">${escapeHtml(osc.id_osc)}</span>`,
-                className: ''
+                content: `<span class="osc-id-badge">${escapeHtml(osc.id_osc)}</span>`,
+                className: 'text-center'
             },
             {
-                content: `<span class="fw-semibold">${escapeHtml(osc.nome)}</span>`,
-                className: 'text-truncate',
-                style: 'max-width: 200px;',
+                content: `
+                    <div class="osc-name-cell">
+                        <span class="osc-name">${formatValue(osc.nome)}</span>
+                        <span class="osc-subline">
+                            <i class="fas fa-location-dot"></i>${formatValue(osc.edmu_nm_municipio)}
+                        </span>
+                    </div>
+                `,
+                className: '',
+                style: 'min-width: 240px; max-width: 300px;',
                 title: osc.nome || ''
             },
             {
                 content: osc.email ? 
-                    `<a href="mailto:${escapeHtml(osc.email)}" class="text-decoration-none">${escapeHtml(osc.email)}</a>` : 
-                    '-',
-                className: 'text-truncate',
-                style: 'max-width: 150px;',
+                    `
+                    <div class="osc-contact-cell">
+                        <a href="mailto:${escapeHtml(osc.email)}" class="text-decoration-none osc-contact-link">${escapeHtml(osc.email)}</a>
+                        <span class="osc-subline"><i class="fas fa-envelope-open-text"></i>contato principal</span>
+                    </div>
+                    ` : 
+                    '<span class="osc-muted">Sem e-mail informado</span>',
+                className: '',
+                style: 'min-width: 180px; max-width: 240px;',
                 title: osc.email || ''
             },
             {
-                content: escapeHtml(osc.endereco),
-                className: 'text-truncate',
-                style: 'max-width: 200px;',
+                content: osc.endereco
+                    ? `
+                    <div class="osc-location-cell">
+                        <span class="osc-address">${escapeHtml(osc.endereco)}</span>
+                        <span class="osc-subline"><i class="fas fa-route"></i>endereço cadastrado</span>
+                    </div>
+                    `
+                    : '<span class="osc-muted">Sem endereço informado</span>',
+                className: '',
+                style: 'min-width: 220px; max-width: 300px;',
                 title: osc.endereco || ''
             },
             {
                 content: osc.telefone ? 
-                    `<a href="tel:${escapeHtml(osc.telefone)}" class="text-decoration-none">${escapeHtml(osc.telefone)}</a>` : 
-                    '-',
-                className: 'text-truncate',
-                style: 'max-width: 120px;',
+                    `
+                    <div class="osc-contact-cell">
+                        <a href="tel:${escapeHtml(osc.telefone)}" class="text-decoration-none osc-contact-link">${escapeHtml(osc.telefone)}</a>
+                        <span class="osc-subline"><i class="fas fa-phone-volume"></i>canal telefônico</span>
+                    </div>
+                    ` : 
+                    '<span class="osc-muted">Sem telefone informado</span>',
+                className: '',
+                style: 'min-width: 150px; max-width: 180px;',
                 title: osc.telefone || ''
             },
             {
-                content: `<span class="badge bg-secondary">${escapeHtml(osc.natureza_juridica)}</span>`,
-                className: 'text-truncate',
-                style: 'max-width: 150px;',
+                content: `<span class="osc-chip osc-chip--neutral">${formatValue(osc.natureza_juridica)}</span>`,
+                className: '',
+                style: 'min-width: 180px; max-width: 220px;',
                 title: osc.natureza_juridica || ''
             },
             {
-                content: `<span class="badge ${osc.situacao_cadastral === 'ATIVA' ? 'bg-success' : 'bg-warning'}">${escapeHtml(osc.situacao_cadastral)}</span>`,
-                className: 'text-truncate',
-                style: 'max-width: 120px;',
+                content: `<span class="osc-chip ${situacaoAtiva ? 'osc-chip--success' : 'osc-chip--warning'}">${formatValue(osc.situacao_cadastral)}</span>`,
+                className: '',
+                style: 'min-width: 135px; max-width: 160px;',
                 title: osc.situacao_cadastral || ''
             },
             {
-                content: `<i class="fas fa-map-marker-alt me-1"></i>${escapeHtml(osc.edmu_nm_municipio)}`,
-                className: 'text-truncate',
-                style: 'max-width: 150px;',
+                content: `
+                    <div class="osc-location-cell">
+                        <span class="osc-name">${formatValue(osc.edmu_nm_municipio)}</span>
+                        <span class="osc-subline"><i class="fas fa-map"></i>território da organização</span>
+                    </div>
+                `,
+                className: '',
+                style: 'min-width: 170px; max-width: 200px;',
                 title: osc.edmu_nm_municipio || ''
             },
             {
                 content: osc.cbh && osc.cbh !== '-'
-                    ? `<span class="badge bg-info text-dark" style="font-size:0.75em;">${escapeHtml(osc.cbh)}</span>`
-                    : '<span class="text-muted">-</span>',
-                className: 'text-truncate',
-                style: 'max-width: 160px;',
+                    ? `<span class="osc-chip osc-chip--info osc-cbh">${escapeHtml(osc.cbh)}</span>`
+                    : '<span class="osc-muted">Sem vinculação</span>',
+                className: '',
+                style: 'min-width: 190px; max-width: 240px;',
                 title: osc.cbh || ''
             }
         ];
@@ -114,16 +147,7 @@ class OSCTable extends ModernTable {
             
             tr.appendChild(td);
         });
-        
-        // Adicionar efeitos de hover
-        tr.addEventListener('mouseenter', () => {
-            tr.style.backgroundColor = 'rgba(52, 152, 219, 0.1)';
-        });
-        
-        tr.addEventListener('mouseleave', () => {
-            tr.style.backgroundColor = '';
-        });
-        
+
         return tr;
     }
     

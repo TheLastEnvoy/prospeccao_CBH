@@ -1,73 +1,113 @@
 {% extends 'osc_dashboard/base.html' %}
 {% load static %}
 
-{% block title %}Dashboard OSCs Paraná{% endblock %}
+{% block title %}Dashboard de prospecção (OSCs) - IAT/PR - Gerência de Gestão de Bacias Hidrográficas{% endblock %}
 
 {% block content %}
 <!-- CSRF Token -->
 {% csrf_token %}
 
-<div class="container-fluid">
-    <!-- Header Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-0 bg-gradient-primary text-white">
-                <div class="card-body text-center py-4">
-                    <h1 class="display-6 fw-bold mb-2">
-                        <i class="fas fa-chart-bar me-3"></i>
-                        Dashboard de OSCs do Paraná
+<div class="container-fluid dashboard-shell">
+    <section class="dashboard-hero card border-0 mb-4 overflow-hidden">
+        <div class="card-body p-4 p-xl-5">
+            <div class="row g-4 align-items-center">
+                <div class="col-xl-7">
+                    <div class="dashboard-eyebrow">
+                        <i class="fas fa-chart-line me-2"></i>Painel analítico de prospecção
+                    </div>
+                    <h1 class="dashboard-hero-title">
+                        Painel de prospecção de OSCs do Paraná
                     </h1>
-                    <p class="lead mb-0">
-                        Explore e analise dados de <span id="total-oscs" class="fw-bold">{{ total_registros|default:0 }}</span> Organizações da Sociedade Civil
+                    <p class="dashboard-hero-subtitle">
+                        Explore <span id="total-oscs" class="fw-bold">{{ total_registros|default:0 }}</span> organizações com leitura executiva, filtros inteligentes, resultados refinados e mapa operacional.
                     </p>
+                    <div class="hero-pill-group">
+                        <span class="hero-pill"><i class="fas fa-shield-halved"></i> comportamento preservado</span>
+                        <span class="hero-pill"><i class="fas fa-table"></i> tabela redesenhada</span>
+                        <span class="hero-pill"><i class="fas fa-map-location-dot"></i> mapa interativo</span>
+                    </div>
+                </div>
+                <div class="col-xl-5">
+                    <div class="hero-highlight-grid">
+                        <article class="hero-highlight-card">
+                            <span class="hero-highlight-label">Base catalogada</span>
+                            <strong class="hero-highlight-value">{{ total_registros|default:0 }}</strong>
+                            <span class="hero-highlight-detail">OSCs prontas para consulta</span>
+                        </article>
+                        <article class="hero-highlight-card">
+                            <span class="hero-highlight-label">Cobertura territorial</span>
+                            <strong class="hero-highlight-value">{{ municipios|length }}</strong>
+                            <span class="hero-highlight-detail">municípios mapeados</span>
+                        </article>
+                        <article class="hero-highlight-card hero-highlight-card--wide">
+                            <span class="hero-highlight-label">Estrutura de análise</span>
+                            <div class="hero-highlight-metrics">
+                                <div>
+                                    <strong>{{ cbh_list|length }}</strong>
+                                    <span>CBHs</span>
+                                </div>
+                                <div>
+                                    <strong>{{ naturezas_juridicas|length }}</strong>
+                                    <span>naturezas</span>
+                                </div>
+                                <div>
+                                    <strong id="hero-active-filters">0</strong>
+                                    <span>filtros ativos</span>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <!-- Stats Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 h-100">
-                <div class="card-body text-center">
-                    <div class="text-primary mb-2">
-                        <i class="fas fa-building fa-2x"></i>
+    <div class="row g-2 mb-3 dashboard-stats">
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 h-100 stat-card stat-card--primary">
+                <div class="card-body">
+                    <div class="stat-card-icon">
+                        <i class="fas fa-building"></i>
                     </div>
-                    <h5 class="card-title">Total de OSCs</h5>
-                    <h3 class="text-primary fw-bold" id="stats-total">{{ total_registros|default:0 }}</h3>
+                    <span class="stat-card-label">Total de OSCs</span>
+                    <h3 class="stat-card-value text-primary" id="stats-total" data-total="{{ total_registros|default:0 }}">{{ total_registros|default:0 }}</h3>
+                    <p class="stat-card-detail mb-0">Base total disponível</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 h-100">
-                <div class="card-body text-center">
-                    <div class="text-success mb-2">
-                        <i class="fas fa-map-marker-alt fa-2x"></i>
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 h-100 stat-card stat-card--success">
+                <div class="card-body">
+                    <div class="stat-card-icon">
+                        <i class="fas fa-map-location-dot"></i>
                     </div>
-                    <h5 class="card-title">Municípios</h5>
-                    <h3 class="text-success fw-bold">{{ municipios|length }}</h3>
+                    <span class="stat-card-label">Municípios</span>
+                    <h3 class="stat-card-value text-success">{{ municipios|length }}</h3>
+                    <p class="stat-card-detail mb-0">Cobertura territorial</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 h-100">
-                <div class="card-body text-center">
-                    <div class="text-warning mb-2">
-                        <i class="fas fa-tags fa-2x"></i>
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 h-100 stat-card stat-card--warning">
+                <div class="card-body">
+                    <div class="stat-card-icon">
+                        <i class="fas fa-tags"></i>
                     </div>
-                    <h5 class="card-title">Naturezas Jurídicas</h5>
-                    <h3 class="text-warning fw-bold">{{ naturezas_juridicas|length }}</h3>
+                    <span class="stat-card-label">Naturezas jurídicas</span>
+                    <h3 class="stat-card-value text-warning">{{ naturezas_juridicas|length }}</h3>
+                    <p class="stat-card-detail mb-0">Segmentações ativas</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 h-100">
-                <div class="card-body text-center">
-                    <div class="text-info mb-2">
-                        <i class="fas fa-filter fa-2x"></i>
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 h-100 stat-card stat-card--info">
+                <div class="card-body">
+                    <div class="stat-card-icon">
+                        <i class="fas fa-filter"></i>
                     </div>
-                    <h5 class="card-title">Filtrados</h5>
-                    <h3 class="text-info fw-bold" id="stats-filtered">0</h3>
+                    <span class="stat-card-label">Resultado filtrado</span>
+                    <h3 class="stat-card-value text-info" id="stats-filtered">0</h3>
+                    <p class="stat-card-detail mb-0">Atualizado por consulta</p>
                 </div>
             </div>
         </div>
@@ -76,14 +116,38 @@
     <!-- Filters Section -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card border-0">
-                <div class="card-header bg-light border-0">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-search me-2"></i>
-                        Filtros de Pesquisa
-                    </h5>
+            <div class="card border-0 dashboard-panel">
+                <div class="card-header border-0 dashboard-panel-header">
+                    <div>
+                        <span class="section-kicker">Workspace analítico</span>
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-sliders me-2"></i>
+                            Filtros de pesquisa
+                        </h5>
+                    </div>
+                    <span class="section-status-badge" id="active-filter-count">0 filtros ativos</span>
                 </div>
                 <div class="card-body">
+                    <div class="dashboard-filter-actions sticky-top">
+                        <div class="dashboard-action-bar d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-primary" id="btn-filtrar">
+                                <i class="fas fa-filter me-2"></i>Filtrar Dados
+                            </button>
+                            <button type="button" class="btn btn-success" id="btn-exportar">
+                                <i class="fas fa-download me-2"></i>Exportar Excel
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="btn-limpar">
+                                <i class="fas fa-eraser me-2"></i>Limpar Filtros
+                            </button>
+                            <button type="button" class="btn btn-outline-info" id="btn-toggle-mapa">
+                                <i class="fas fa-map-slash me-2" id="btn-toggle-mapa-icon"></i><span id="btn-toggle-mapa-text">Ocultar Mapa</span>
+                            </button>
+                            <button type="button" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#helpModal">
+                                <i class="fas fa-question-circle me-2"></i>Ajuda
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="row g-3">
                         <div class="col-lg-3 col-md-6">
                             <label for="cbh_selector" class="form-label fw-semibold">
@@ -228,28 +292,58 @@
                         </div>
                     </div>
 
-                    <!-- Action Buttons -->
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <div class="d-flex flex-wrap gap-2">
-                                <button type="button" class="btn btn-primary" id="btn-filtrar">
-                                    <i class="fas fa-filter me-2"></i>Filtrar Dados
-                                </button>
-                                <button type="button" class="btn btn-success" id="btn-exportar">
-                                    <i class="fas fa-download me-2"></i>Exportar Excel
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary" id="btn-limpar">
-                                    <i class="fas fa-eraser me-2"></i>Limpar Filtros
-                                </button>
-                                <button type="button" class="btn btn-outline-info" id="btn-toggle-mapa">
-                                    <i class="fas fa-map me-2"></i>Mostrar/Ocultar Mapa
-                                </button>
-                                <button type="button" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#helpModal">
-                                    <i class="fas fa-question-circle me-2"></i>Ajuda
-                                </button>
-                            </div>
+                    <div class="dashboard-filter-summary mt-4">
+                        <div class="dashboard-filter-summary-copy">
+                            <span class="section-kicker">Leitura atual</span>
+                            <p class="mb-0 text-muted">Os filtros ativos aparecem aqui em tempo real para facilitar auditoria visual da consulta.</p>
+                        </div>
+                        <div class="filter-chip-list" id="active-filter-summary">
+                            <span class="filter-chip filter-chip--placeholder">Nenhum filtro ativo</span>
                         </div>
                     </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-2 mb-3 dashboard-insight-grid">
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 insight-card insight-card--primary h-100">
+                <div class="card-body">
+                    <span class="insight-label">Resultados encontrados</span>
+                    <strong class="insight-value" id="insight-results-total">0</strong>
+                    <span class="insight-detail" id="insight-page-preview">Aguardando consulta</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 insight-card h-100">
+                <div class="card-body">
+                    <span class="insight-label">Cobertura da consulta</span>
+                    <strong class="insight-value" id="insight-coverage-value">0%</strong>
+                    <div class="insight-progress">
+                        <span id="insight-coverage-bar"></span>
+                    </div>
+                    <span class="insight-detail" id="insight-coverage-detail">Nenhum recorte aplicado</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 insight-card h-100">
+                <div class="card-body">
+                    <span class="insight-label">Intensidade de filtros</span>
+                    <strong class="insight-value" id="insight-active-filters">0</strong>
+                    <span class="insight-detail" id="insight-active-filters-detail">Consulta ampla</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 insight-card h-100">
+                <div class="card-body">
+                    <span class="insight-label">Foco atual</span>
+                    <strong class="insight-value insight-value--text" id="insight-focus-title">Visao estadual</strong>
+                    <span class="insight-detail" id="insight-focus-detail">Sem município ou CBH priorizado</span>
                 </div>
             </div>
         </div>
@@ -258,15 +352,18 @@
     <!-- Map Section -->
     <div class="row mb-4" id="mapa-section">
         <div class="col-12">
-            <div class="card border-0">
-                <div class="card-header bg-light border-0">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-map me-2"></i>
-                        Mapa de Distribuição das OSCs
-                    </h5>
+            <div class="card border-0 dashboard-panel">
+                <div class="card-header border-0 dashboard-panel-header">
+                    <div>
+                        <span class="section-kicker">Exploracao espacial</span>
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-map me-2"></i>
+                            Mapa de distribuição das OSCs
+                        </h5>
+                    </div>
+                    <span class="section-status-badge" id="map-visibility-status">Mapa visivel</span>
                 </div>
                 <div class="card-body">
-                    <!-- Map Search -->
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <div class="map-search-container">
@@ -277,7 +374,6 @@
                         </div>
                     </div>
 
-                    <!-- Map Container -->
                     <div class="row">
                         <div class="col-12">
                             <div id="map" class="rounded shadow-sm"></div>
@@ -306,13 +402,17 @@
     <!-- Results Section -->
     <div class="row">
         <div class="col-12">
-            <div class="card border-0">
-                <div class="card-header bg-light border-0 d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-table me-2"></i>
-                        Resultados da Pesquisa
-                    </h5>
-                    <div class="d-flex align-items-center gap-3">
+            <div class="card border-0 dashboard-panel">
+                <div class="card-header border-0 dashboard-panel-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div>
+                        <span class="section-kicker">Resultado operacional</span>
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-table me-2"></i>
+                            Resultados da pesquisa
+                        </h5>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <span class="section-status-badge section-status-badge--muted" id="results-status-badge">Aguardando consulta</span>
                         <small class="text-muted" id="info-paginacao">
                             Mostrando 0 de 0 registros
                         </small>
@@ -329,9 +429,20 @@
                         </div>
                     </div>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
-                        <table class="table table-hover mb-0" id="tabela-oscs">
+                <div class="card-body p-0 results-content-surface">
+                    <div class="results-toolbar">
+                        <div class="results-toolbar-copy">
+                            <span class="section-kicker mb-1">Tabela operacional</span>
+                            <p class="mb-0 text-muted">Leitura mais densa, hierarquia visual mais clara e navegação melhor entre contatos, situação e território.</p>
+                        </div>
+                        <div class="results-toolbar-badges">
+                            <span class="results-toolbar-pill"><i class="fas fa-grip-lines"></i> densidade otimizada</span>
+                            <span class="results-toolbar-pill"><i class="fas fa-thumbtack"></i> cabeçalho fixo</span>
+                            <span class="results-toolbar-pill"><i class="fas fa-bolt"></i> leitura rápida</span>
+                        </div>
+                    </div>
+                    <div class="table-responsive results-table-shell" style="max-height: 600px; overflow-y: auto;">
+                        <table class="table table-hover mb-0 results-data-table" id="tabela-oscs">
                             <thead class="table-dark">
                                 <tr>
                                     <th scope="col" class="text-center" data-sortable="id_osc">
@@ -369,13 +480,14 @@
                                         <i class="fas fa-search fa-2x mb-3 d-block"></i>
                                         <h6>Nenhum dado carregado</h6>
                                         <p class="mb-0">Use os filtros acima e clique em "Filtrar Dados" para carregar os resultados</p>
-                                        <small class="text-muted">💡 Dica: Selecione um município e/ou palavras-chave para começar</small>
+                                        <small class="text-muted">Use os filtros acima para montar um recorte e carregar os resultados</small>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
