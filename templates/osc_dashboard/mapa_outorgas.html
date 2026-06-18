@@ -1,0 +1,122 @@
+{% extends 'osc_dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid dashboard-shell">
+    <section class="dashboard-hero card border-0 mb-4 overflow-hidden">
+        <div class="card-body p-4 p-lg-5">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-8">
+                    <div class="dashboard-eyebrow">
+                        <span class="dot"></span>
+                        Outorgas IAT
+                    </div>
+                    <h1 class="dashboard-hero-title">Mapa interativo de outorgas</h1>
+                    <p class="dashboard-hero-subtitle mb-0">
+                        Explore a camada <strong>outorgas2_IAT</strong> e altere a classificação visual
+                        entre comitê de bacia, atividade macro e bacia hidrográfica.
+                    </p>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card border-0 dashboard-panel map-outorgas-panel h-100">
+                        <div class="card-body">
+                            <label for="classification-field" class="form-label map-outorgas-label">
+                                Classificar camada por
+                            </label>
+                            <select id="classification-field" class="form-select map-outorgas-select">
+                                {% for field in classification_fields %}
+                                <option value="{{ field.value }}">{{ field.label }}</option>
+                                {% endfor %}
+                            </select>
+                            <p class="map-outorgas-help mb-0">
+                                A legenda e as cores do mapa são atualizadas automaticamente.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="card border-0 dashboard-panel map-summary-shell mb-4">
+        <div class="card-header border-0 dashboard-panel-header">
+            <div>
+                <h5 class="mb-1">Quantitativos por classificação</h5>
+                <p class="text-muted mb-0">
+                    Totais da camada conforme a classificação selecionada no mapa.
+                </p>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive map-table-wrap">
+                <table class="table table-dark table-hover align-middle mb-0 map-summary-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th id="map-summary-column-label">Categoria</th>
+                            <th class="text-end">Outorgas</th>
+                            <th class="text-end">% do total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="map-summary-table-body">
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">Carregando dados...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 dashboard-panel map-outorgas-shell">
+        <div class="card-header border-0 dashboard-panel-header">
+            <div>
+                <h5 class="mb-1">Camada de outorgas</h5>
+                <p class="text-muted mb-0">Pontos classificados dinamicamente a partir dos atributos do GeoJSON.</p>
+            </div>
+        </div>
+        <div class="card-body">
+            <div
+                id="outorgas-map"
+                class="outorgas-map"
+                data-geojson-url="{% static 'geojson/outorgas2_IAT.geojson' %}"
+            ></div>
+        </div>
+    </div>
+
+    <div class="card border-0 dashboard-panel map-summary-shell mt-4">
+        <div class="card-header border-0 dashboard-panel-header">
+            <div>
+                <h5 class="mb-1">Totais por comitê e atividade</h5>
+                <p class="text-muted mb-0">
+                    Consolidação detalhada da quantidade de outorgas por comitê de bacia e categoria de atividade.
+                </p>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive map-table-wrap map-table-wrap-lg">
+                <table class="table table-dark table-hover align-middle mb-0 map-summary-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Comitê de bacia</th>
+                            <th>Atividade macro</th>
+                            <th class="text-end">Outorgas</th>
+                            <th class="text-end">% do total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="map-detail-table-body">
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">Carregando dados...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/mapa_outorgas.js' %}"></script>
+{% endblock %}

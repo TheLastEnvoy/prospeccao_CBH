@@ -86,6 +86,30 @@ def mapa_teste(request):
     """View para testar o mapa isoladamente"""
     return render(request, 'osc_dashboard/mapa_teste.html')
 
+def mapa_outorgas(request):
+    """View do mapa interativo de outorgas"""
+    classification_fields = [
+        {
+            'value': 'outorgas_IAT_agrupado_CBH_COMITE',
+            'label': 'Comitê de bacia',
+        },
+        {
+            'value': 'outorgas_IAT_agrupado_ATV_MACRO',
+            'label': 'Atividade macro',
+        },
+        {
+            'value': 'bac_nome',
+            'label': 'Bacia hidrográfica',
+        },
+    ]
+    return render(
+        request,
+        'osc_dashboard/mapa_outorgas.html',
+        {
+            'classification_fields': classification_fields,
+        },
+    )
+
 def get_filter_options():
     """Obtém as opções de filtro disponíveis do banco"""
     try:
