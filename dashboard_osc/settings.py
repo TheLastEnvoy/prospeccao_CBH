@@ -23,16 +23,11 @@ if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 # Adicionar domínios Render automaticamente
-import os
 if 'RENDER' in os.environ:
-    # Adicionar domínios comuns do Render
     ALLOWED_HOSTS.extend([
         'prospeccao-cbh.onrender.com',
-        '*.onrender.com',
+        '.onrender.com',
     ])
-    # Permitir qualquer subdomínio .onrender.com em produção
-    if not DEBUG:
-        ALLOWED_HOSTS.append('*')
 
 # Application definition
 INSTALLED_APPS = [

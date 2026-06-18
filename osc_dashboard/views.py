@@ -4,7 +4,6 @@ import os
 from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 from django.conf import settings
-from django.views.decorators.csrf import csrf_exempt
 import json
 from datetime import datetime
 import pandas as pd
@@ -166,7 +165,6 @@ def dashboard(request):
 
     return render(request, 'osc_dashboard/dashboard.html', context)
 
-@csrf_exempt
 def export_data(request):
     """Exporta dados filtrados para Excel usando SQLite"""
     if request.method == 'POST':
@@ -315,7 +313,6 @@ def export_data(request):
     
     return JsonResponse({'error': 'Método não permitido'}, status=405)
 
-@csrf_exempt
 def filter_data(request):
     """Filtra dados usando SQLite e retorna resultados em JSON"""
     if request.method == 'POST':

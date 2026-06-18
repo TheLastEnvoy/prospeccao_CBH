@@ -13,6 +13,6 @@ services:
       - key: DEBUG
         value: false
       - key: ALLOWED_HOSTS
-        value: "*"
+        value: "prospeccao-cbh.onrender.com"
       - key: WEB_CONCURRENCY
         value: 4
