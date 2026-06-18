@@ -1,128 +1,194 @@
-# 🌊 Dashboard de Prospecção - Comitês de Bacias Hidrográficas do Paraná
+# Dashboard de Prospeccao - CBHs do Parana
 
-> **Ferramenta para facilitar o trabalho de prospecção de Organizações da Sociedade Civil (OSCs) relacionadas aos Comitês de Bacias Hidrográficas do estado do Paraná.**
+Aplicacao Django para prospeccao de Organizacoes da Sociedade Civil (OSCs) no Parana e para exploracao espacial de dados ligados aos Comites de Bacias Hidrograficas.
 
-## 🔗 Acesso Online
+Hoje o projeto possui dois focos principais:
 
-**🌐 [https://prospeccao-cbh.onrender.com](https://prospeccao-cbh.onrender.com)**
+1. **Painel de prospeccao de OSCs** com filtros, tabela de resultados e exportacao.
+2. **Mapa interativo de outorgas** com classificacao dinamica da camada GeoJSON.
 
----
+## Acesso online
 
-## 🎯 Objetivo
+- Producao: https://prospeccao-cbh.onrender.com
 
-Esta ferramenta foi desenvolvida para **otimizar o processo de prospecção** de organizações que podem ter interesse ou atuação relacionada aos **Comitês de Bacias Hidrográficas do Paraná**, facilitando:
+## O que existe no projeto hoje
 
-- 🔍 **Identificação rápida** de OSCs por município
-- 🏷️ **Filtragem por natureza jurídica** (Associações, Fundações, etc.)
-- 🔎 **Busca por palavras-chave** relacionadas a meio ambiente, água, sustentabilidade
-- 📊 **Exportação de dados** para contato e análise
-- 🗺️ **Visualização geográfica** da distribuição das organizações
+### 1. Painel de prospeccao de OSCs
 
-## 📊 Base de Dados
+Rota principal: `/`
 
-- **50.585 OSCs** cadastradas no Paraná
-- **399 municípios** cobertos
-- **4 tipos** de natureza jurídica
-- Dados atualizados e validados
+Funcionalidades atuais:
 
-## ⚡ Funcionalidades Principais
+- filtros por municipio, natureza juridica, situacao cadastral e palavras-chave
+- leitura de dados a partir de banco SQLite local
+- tabela de resultados no frontend
+- exportacao de resultados para Excel
+- apoio territorial por CBH e municipios
 
-### 🔍 **Filtros Inteligentes**
-- **Múltiplos municípios:** Selecione várias cidades simultaneamente
-- **Múltiplas naturezas jurídicas:** Combine diferentes tipos de organização
-- **Palavras-chave ambientais:** Busque por termos como "água", "ambiental", "sustentável", "rural"
-- **Filtros combinados:** Use todos os critérios juntos para prospecção precisa
+### 2. Mapa interativo de outorgas
 
-### 📋 **Visualização Otimizada**
-- Interface responsiva e moderna
-- Tabela com todas as informações de contato
-- Estatísticas em tempo real
-- Paginação inteligente
+Rota: `/mapa-outorgas/`
 
-### 📥 **Exportação Profissional**
-- Download em Excel (.xlsx)
-- Dados filtrados prontos para uso
-- Formatação automática das colunas
-- Timestamp no nome do arquivo
+Funcionalidades atuais:
 
-## 🚀 Tecnologias
+- mapa Leaflet com base OpenStreetMap
+- leitura da camada `static/geojson/outorgas2_IAT.geojson`
+- classificacao da camada por:
+  - `outorgas_IAT_agrupado_CBH_COMITE`
+  - `outorgas_IAT_agrupado_ATV_MACRO`
+  - `bac_nome`
+- legenda dinamica
+- popup com atributos principais da outorga
+- tabela superior com quantitativos da classificacao ativa
+- tabela inferior com totais por CBH e atividade macro
 
-- **Backend:** Django 4.2.7 + Python 3.11
-- **Frontend:** Bootstrap 5 + jQuery + DataTables
-- **Mapas:** Leaflet.js
-- **Deploy:** Render.com (sempre online)
+## Stack atual
 
-## 💡 Casos de Uso
+- **Backend:** Django 4.2.7
+- **Linguagem:** Python
+- **Dados tabulares:** SQLite + pandas
+- **Exportacao:** openpyxl
+- **Frontend:** Bootstrap 5 + JavaScript
+- **Mapas:** Leaflet
+- **Arquivos estaticos em producao:** WhiteNoise
+- **Deploy:** Render
 
-### Para Comitês de Bacias Hidrográficas:
-- Identificar OSCs ambientais em municípios específicos
-- Prospectar organizações para parcerias e projetos
-- Mapear potenciais participantes em ações de conservação
-- Facilitar comunicação com sociedade civil organizada
+## Estrutura relevante
 
-### Para Gestores Públicos:
-- Encontrar organizações para consultas públicas
-- Identificar parceiros para projetos ambientais
-- Mapear atores locais em recursos hídricos
+```text
+dashboard_osc/              Configuracao do projeto Django
+osc_dashboard/              App principal
+templates/osc_dashboard/    Templates HTML
+static/css/                 Estilos
+static/js/                  Scripts do frontend
+static/geojson/             Camadas GeoJSON usadas no app
+data/oscs_parana_novo.db    Base SQLite consumida pelo dashboard de OSCs
+render.yaml                 Configuracao de deploy no Render
+build.sh                    Script de build/deploy
+```
 
-### Para Pesquisadores:
-- Análise da distribuição de OSCs ambientais
-- Estudos sobre sociedade civil e meio ambiente
-- Mapeamento de organizações por região
+## Rotas principais
 
-## 🔧 Execução Local
+- `/` - dashboard de prospeccao de OSCs
+- `/mapa-outorgas/` - mapa interativo de outorgas
+- `/filter/` - endpoint de filtragem
+- `/export/` - exportacao de dados
+- `/municipios-data/` - endpoint auxiliar de municipios
+- `/mapa-teste/` - pagina de teste do mapa
+
+## Dados esperados pelo projeto
+
+### Banco SQLite
+
+O dashboard principal usa o arquivo:
+
+```text
+data/oscs_parana_novo.db
+```
+
+Esse banco e lido diretamente pelas views para buscar:
+
+- OSCs
+- municipios
+- naturezas juridicas
+- situacoes cadastrais
+- relacionamento entre CBHs e municipios
+
+### GeoJSON de outorgas
+
+O mapa de outorgas usa:
+
+```text
+static/geojson/outorgas2_IAT.geojson
+```
+
+Esse arquivo ja faz parte do repositorio e e servido como arquivo estatico pelo Django/WhiteNoise.
+
+## Execucao local
+
+### 1. Clonar o repositorio
 
 ```bash
-# 1. Clone o repositório
 git clone <url-do-repositorio>
-cd dashboard_prospeccao
+cd prospeccao_CBH
+```
 
-# 2. Instale dependências
+### 2. Criar e ativar ambiente virtual
+
+No Windows:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+No Linux/macOS:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+### 3. Instalar dependencias
+
+```bash
 pip install -r requirements.txt
+```
 
-# 3. Execute o servidor
+### 4. Configurar variaveis de ambiente
+
+Voce pode usar `env_example.txt` como referencia. Exemplo minimo:
+
+```env
+SECRET_KEY=your-secret-key-here
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+```
+
+### 5. Rodar o projeto
+
+```bash
 python manage.py runserver
-
-# 4. Acesse: http://localhost:8000
 ```
 
-## 📈 Exemplos de Prospecção
+Depois acesse:
 
-### Cenário 1: OSCs Ambientais em Curitiba
+- Dashboard OSCs: http://127.0.0.1:8000/
+- Mapa de outorgas: http://127.0.0.1:8000/mapa-outorgas/
+
+## Deploy no Render
+
+O projeto ja esta preparado para deploy com:
+
+- `render.yaml`
+- `build.sh`
+- WhiteNoise para servir arquivos estaticos
+
+O build atual executa:
+
+1. instalacao de dependencias
+2. `collectstatic`
+3. `migrate`
+
+Comandos principais:
+
+- **Build:** `./build.sh`
+- **Start:** `gunicorn dashboard_osc.wsgi:application`
+
+## Observacoes importantes
+
+- O dashboard de OSCs depende da existencia de `data/oscs_parana_novo.db`.
+- O mapa de outorgas depende do GeoJSON versionado em `static/geojson/outorgas2_IAT.geojson`.
+- O GeoJSON de outorgas e grande, entao o carregamento no navegador pode ser mais pesado que o restante do sistema.
+
+## Desenvolvimento
+
+Checagem rapida do projeto:
+
+```bash
+python manage.py check
 ```
-Filtros: Município = "Curitiba" + Palavras-chave = "ambiental água"
-Resultado: 45 organizações encontradas
-```
 
-### Cenário 2: Associações Rurais na Região Metropolitana
-```
-Filtros: Múltiplos municípios + Natureza = "Associação" + Palavra-chave = "rural"
-Resultado: 127 organizações encontradas
-```
+## Suporte
 
-### Cenário 3: Fundações de Conservação
-```
-Filtros: Natureza = "Fundação" + Palavras-chave = "conservação sustentável"
-Resultado: 23 organizações encontradas
-```
-
-## 🗺️ Cobertura Geográfica
-
-O dashboard cobre **100% dos municípios** do Paraná:
-- Região Metropolitana de Curitiba
-- Norte Pioneiro
-- Norte Central
-- Noroeste
-- Oeste
-- Sudoeste
-- Centro-Sul
-- Sudeste
-- Centro-Oriental
-- Centro-Ocidental
-
-## 📞 Suporte
-
-Para dúvidas sobre o uso da ferramenta ou sugestões de melhorias, abra uma issue no GitHub.
-
----
-
+Para ajustes, correcoes ou novas funcionalidades, abra uma issue ou uma pull request.
