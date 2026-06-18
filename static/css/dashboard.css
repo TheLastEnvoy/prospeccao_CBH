@@ -258,6 +258,137 @@
 
 .keywords-list {
     display: flex;
+}
+
+.outorgas-map {
+    height: 72vh;
+    min-height: 540px;
+    width: 100%;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
+    background: linear-gradient(180deg, rgba(241, 245, 249, 0.95), rgba(226, 232, 240, 0.98));
+}
+
+.map-outorgas-shell .card-body {
+    padding: 1rem;
+}
+
+.map-outorgas-panel {
+    background: rgba(15, 23, 42, 0.82);
+    color: #e2e8f0;
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.map-outorgas-label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 0.75rem;
+}
+
+.map-outorgas-select {
+    border-radius: 14px;
+    min-height: 48px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: rgba(255, 255, 255, 0.96);
+}
+
+.map-outorgas-help {
+    margin-top: 0.75rem;
+    font-size: 0.92rem;
+    color: #cbd5e1;
+}
+
+.map-summary-shell .card-body {
+    padding: 1rem 1.1rem;
+}
+
+.map-table-wrap {
+    border-radius: 18px;
+    overflow: auto;
+    max-height: 360px;
+    border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.map-table-wrap-lg {
+    max-height: 520px;
+}
+
+.map-summary-table {
+    margin-bottom: 0;
+}
+
+.map-summary-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: rgba(15, 23, 42, 0.98);
+    border-bottom-color: rgba(148, 163, 184, 0.16);
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.map-summary-table tbody td {
+    border-color: rgba(148, 163, 184, 0.1);
+    font-size: 0.94rem;
+    color: #e2e8f0;
+}
+
+.map-table-rank {
+    width: 56px;
+    color: #94a3b8;
+    font-weight: 700;
+}
+
+.map-category-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.65rem;
+    border-radius: 999px;
+    background: rgba(37, 99, 235, 0.14);
+    color: #dbeafe;
+    font-weight: 600;
+}
+
+.legend .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 0.45rem;
+    font-size: 0.86rem;
+    white-space: normal;
+}
+
+.legend .legend-item span {
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+}
+
+@media (max-width: 991px) {
+    .outorgas-map {
+        height: 64vh;
+        min-height: 460px;
+    }
+}
+
+@media (max-width: 768px) {
+    .outorgas-map {
+        height: 58vh;
+        min-height: 380px;
+        border-radius: 18px;
+    }
+
+    .map-table-wrap,
+    .map-table-wrap-lg {
+        max-height: none;
+    }
     flex-wrap: wrap;
     gap: 5px;
     min-height: 0;
