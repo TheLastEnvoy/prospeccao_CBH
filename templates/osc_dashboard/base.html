@@ -23,216 +23,23 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/dashboard-theme.css' %}">
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
-
-    <style>
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #e74c3c;
-            --success-color: #27ae60;
-            --warning-color: #f39c12;
-            --info-color: #17a2b8;
-            --light-color: #f8f9fa;
-            --dark-color: #343a40;
-        }
-
-        body {
-            background:
-                radial-gradient(circle at top left, rgba(56, 189, 248, 0.14), transparent 22%),
-                radial-gradient(circle at top right, rgba(59, 130, 246, 0.16), transparent 20%),
-                linear-gradient(180deg, #020617 0%, #0f172a 44%, #111827 100%);
-            color: #e2e8f0;
-            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            min-height: 100vh;
-        }
-
-        .navbar {
-            background: linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 41, 59, 0.9));
-            box-shadow: 0 8px 20px rgba(0,0,0,0.18);
-            border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-        }
-
-        .navbar-brand {
-            font-weight: 700;
-            font-size: 1.5rem;
-        }
-
-        .card {
-            border: none;
-            border-radius: 20px;
-            box-shadow: 0 10px 24px rgba(0,0,0,0.18);
-            background: rgba(15, 23, 42, 0.74);
-        }
-
-        .bg-gradient-primary {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
-        }
-
-        .btn {
-            border-radius: 15px;
-            font-weight: 600;
-            padding: 12px 24px;
-            transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
-            border: none;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--secondary-color), #2980b9);
-            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
-        }
-
-        .btn-primary:hover {
-            box-shadow: 0 6px 14px rgba(52, 152, 219, 0.24);
-            background: linear-gradient(135deg, #2980b9, var(--secondary-color));
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, var(--success-color), #229954);
-            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
-        }
-
-        .btn-success:hover {
-            box-shadow: 0 6px 14px rgba(39, 174, 96, 0.24);
-        }
-
-        .btn-outline-secondary:hover,
-        .btn-outline-info:hover {
-            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.16);
-        }
-
-        .form-control, .form-select {
-            border-radius: 12px;
-            border: 1px solid rgba(148, 163, 184, 0.24);
-            transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-            padding: 12px 16px;
-            background: rgba(15, 23, 42, 0.56);
-            color: #f8fafc;
-        }
-
-        .form-control:focus, .form-select:focus {
-            border-color: #60a5fa;
-            box-shadow: 0 0 0 0.2rem rgba(96, 165, 250, 0.14);
-        }
-
-        .form-label {
-            font-weight: 600;
-            color: #e2e8f0;
-            margin-bottom: 8px;
-        }
-
-        .table-responsive {
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
-        }
-
-        .table {
-            margin-bottom: 0;
-        }
-
-        .table thead th {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            border: none;
-            font-weight: 600;
-            padding: 16px;
-            font-size: 0.9rem;
-        }
-
-        .table tbody tr {
-            transition: background-color 0.15s ease;
-        }
-
-        .table tbody tr:hover {
-            background-color: rgba(52, 152, 219, 0.05);
-        }
-
-        .table td {
-            padding: 12px 16px;
-            vertical-align: middle;
-        }
-
-        .btn-group .btn {
-            border-radius: 0;
-        }
-
-        .btn-group .btn:first-child {
-            border-top-left-radius: 12px;
-            border-bottom-left-radius: 12px;
-        }
-
-        .btn-group .btn:last-child {
-            border-top-right-radius: 12px;
-            border-bottom-right-radius: 12px;
-        }
-
-        .toast {
-            border-radius: 15px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-        }
-
-        .spinner-border {
-            width: 3rem;
-            height: 3rem;
-        }
-
-        /* Responsividade melhorada */
-        @media (max-width: 768px) {
-            .card-body {
-                padding: 1rem;
-            }
-
-            .btn {
-                padding: 10px 20px;
-                font-size: 0.9rem;
-            }
-
-            .table thead th {
-                font-size: 0.8rem;
-                padding: 12px 8px;
-            }
-
-            .table td {
-                padding: 10px 8px;
-                font-size: 0.9rem;
-            }
-        }
-
-        /* Melhorias de acessibilidade */
-        .btn:focus,
-        .form-control:focus,
-        .form-select:focus {
-            outline: 2px solid var(--secondary-color);
-            outline-offset: 2px;
-        }
-
-        /* Estados de loading melhorados */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-    </style>
     
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
+    <nav class="navbar navbar-expand-xl navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="{% url 'osc_dashboard:dashboard' %}">
                 <i class="fas fa-chart-line me-2"></i>
-                Dashboard de prospecção (OSCs) - IAT/PR - Gerência de Gestão de Bacias Hidrográficas
+                <span class="navbar-brand-content">
+                    <span class="navbar-brand-title">Dashboard de prospecção (OSCs)</span>
+                    <span class="navbar-brand-subtitle">IAT/PR - Gerência de Gestão de Bacias Hidrográficas</span>
+                </span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
@@ -258,7 +65,7 @@
     </main>
 
     <!-- Footer -->
-    <footer class="text-light text-center py-4 mt-5" style="background:linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 41, 59, 0.9)); border-top:1px solid rgba(148, 163, 184, 0.16);">
+    <footer class="dashboard-footer text-light text-center py-4 mt-5">
         <div class="container">
             <p class="mb-0">
                 <i class="fas fa-database me-2"></i>
