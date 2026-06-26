@@ -59,6 +59,7 @@ Funcionalidades atuais:
 dashboard_osc/              Configuração do projeto Django
 osc_dashboard/              App principal
 templates/osc_dashboard/    Templates HTML
+static/css/dashboard-theme.css  Tokens visuais e estilos reutilizáveis do dashboard
 static/css/                 Estilos
 static/js/                  Scripts do frontend
 static/geojson/             Camadas GeoJSON usadas no app
@@ -180,6 +181,7 @@ Comandos principais:
 - O dashboard de OSCs depende da existência de `data/oscs_parana_novo.db`.
 - O mapa de outorgas depende do GeoJSON versionado em `static/geojson/outorgas2_IAT.geojson`.
 - O GeoJSON de outorgas é grande, então o carregamento no navegador pode ser mais pesado que o restante do sistema.
+- A paleta de cores e os estilos-base reutilizáveis ficam em `static/css/dashboard-theme.css`.
 
 ## Desenvolvimento
 
